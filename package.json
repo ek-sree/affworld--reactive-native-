@@ -5,8 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -17,23 +17,39 @@
     "@rneui/base": "^4.0.0-rc.8",
     "axios": "^1.7.9",
     "expo": "~52.0.33",
+    "expo-clipboard": "^7.0.1",
+    "expo-dev-client": "~5.0.12",
+    "expo-image-picker": "^16.0.6",
     "expo-linear-gradient": "^14.0.2",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
     "react-native": "0.76.7",
+    "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "^2.23.1",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-paper": "^5.13.1",
+    "react-native-razorpay": "^2.3.0",
     "react-native-reanimated": "^3.16.7",
     "react-native-safe-area-context": "^5.2.0",
     "react-native-screens": "^4.6.0",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-webview": "^13.13.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@react-native-community/cli": "^15.1.3",
     "@types/react": "~18.3.12",
+    "@types/react-native-razorpay": "^2.2.6",
     "@types/react-native-vector-icons": "^6.4.18",
     "typescript": "^5.3.3"
+  },
+  "babel": {
+    "presets": [
+      "babel-preset-expo"
+    ],
+    "plugins": [
+      "module:react-native-dotenv"
+    ]
   },
   "private": true
 }
