@@ -5,7 +5,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean; 
   userEmail: string | null;
-  login: (token: string, email:string) => Promise<void>;
+  login: (token: string, email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -27,6 +27,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token && email) {
         setIsAuthenticated(true);
         setUserEmail(email);
+      } else {
+        setIsAuthenticated(false);
       }
       setLoading(false);
     };
@@ -49,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading,userEmail, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, loading, userEmail, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

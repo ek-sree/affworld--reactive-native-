@@ -5,6 +5,7 @@ import axios from 'axios';
 import { ParamListBase } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
+import { API } from '../constant/api';
 
 const { width } = Dimensions.get('window');
 
@@ -32,7 +33,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     try {
       console.log("Sending login request...");
       const response = await axios.post(
-        'https://affiliate-api.affworld.io/api/login',
+        `${API}/api/login`,
         new URLSearchParams({
           grant_type: 'password',
           username,
@@ -42,8 +43,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           client_secret: '',
         }),
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-      );
-  
+      );  
       const token = response.data.access_token;
       await login(token, username);
   
@@ -135,8 +135,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Icon name="arrow-right" size={18} color="#FFF" style={styles.buttonIcon} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            <TouchableOpacity style={styles.SignupLink} onPress={() => navigation.navigate("Signup")}>
+              <Text style={styles.SignupLinkText}>Don't have an account?</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -251,11 +251,11 @@ const styles = StyleSheet.create({
     width: width * 0.6,
     height: 120,
   },
-  forgotPassword: {
+  SignupLink: {
     alignItems: 'center',
     marginTop: 16,
   },
-  forgotPasswordText: {
+  SignupLinkText: {
     color: '#4F46E5',
     fontSize: 16,
     fontWeight: '500',
