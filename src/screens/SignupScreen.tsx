@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import { Alert, Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { validateBio, validateEmail, validateName } from "../utils/validation";
-import { useAuth } from "../context/AuthContext";
 import { API } from "../constant/api";
 
 

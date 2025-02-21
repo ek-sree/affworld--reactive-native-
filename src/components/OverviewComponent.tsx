@@ -67,9 +67,7 @@ useEffect(() => {
             Authorization: `Bearer ${token}`,
           },
         }
-      )
-      console.log("More details",response.data);
-      
+      )      
       if(response.status==200){
       setFormData(prevData => ({
         ...prevData,

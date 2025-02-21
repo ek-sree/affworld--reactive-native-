@@ -44,14 +44,13 @@ const ProfileImageModal: React.FC<ProfileImageModalProps> = ({
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images', // Changed from MediaType.Images
+        mediaTypes: 'images', 
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.6,
       });
 
       if (!result.canceled) {
-        // Verify the image dimensions before proceeding
         const { width, height } = await new Promise<{ width: number; height: number }>((resolve) => {
           Image.getSize(result.assets[0].uri, (width, height) => {
             resolve({ width, height });
@@ -91,7 +90,6 @@ const ProfileImageModal: React.FC<ProfileImageModalProps> = ({
       const response = await fetch(uri);
       const blob = await response.blob();
       
-      // Reduced max size to 2MB
       if (blob.size > 2 * 1024 * 1024) {
         throw new Error('Image size too large. Please select an image under 2MB.');
       }
@@ -135,7 +133,6 @@ const ProfileImageModal: React.FC<ProfileImageModalProps> = ({
       const fileType = validateImageFile(selectedImage);
       const formData = await createFormData(selectedImage, fileType);
 
-      // Actual upload request
       const uploadResponse = await axios.post(
         'https://affiliate-api.affworld.io/api/affiliates/update_profile_image',
         formData,

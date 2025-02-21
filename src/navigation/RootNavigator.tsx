@@ -1,13 +1,11 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import HomeScreen from '../screens/HomeScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import WalletScreen from '../screens/WalletScreen';
 import AuthNavigator from "./AuthNavigator";
 import { RootStackParamList } from "../types/types";
+import DrawerNavigator from "./DrawerNavigation";
 
 const RootStack = createStackNavigator<RootStackParamList>();
 
@@ -16,7 +14,7 @@ const RootNavigator = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2563EB" />
       </View>
     );
@@ -26,12 +24,14 @@ const RootNavigator = () => {
     <NavigationContainer>
       {isAuthenticated ? (
         <RootStack.Navigator
-          initialRouteName="Home" screenOptions={{headerStyle: {backgroundColor: '#2563EB'},
-            headerTintColor: '#fff',
-            headerTitleStyle: {fontWeight: 'bold',}}}>
-          <RootStack.Screen name="Home" component={HomeScreen} options={{title: 'Dashboard'}}/>
-          <RootStack.Screen name="Profile" component={ProfileScreen}options={{title: 'My Profile'}}/>
-          <RootStack.Screen name="Wallet" component={WalletScreen} options={{title: 'My Wallet'}}/>
+          screenOptions={{
+            headerShown: false
+          }}
+        >
+          <RootStack.Screen 
+            name="DrawerHome" 
+            component={DrawerNavigator}
+          />
         </RootStack.Navigator>
       ) : (
         <AuthNavigator />
@@ -39,5 +39,13 @@ const RootNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  }
+});
 
 export default RootNavigator;

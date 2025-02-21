@@ -1,7 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import axios from "axios"
-import type React from "react"
-import { useState, useCallback } from "react"
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,17 +11,15 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
-  Platform,
-} from "react-native"
-import { RadioButton } from "react-native-paper"
-import RazorpayCheckout from "react-native-razorpay"
-import { Key_Id } from "@env"
+} from "react-native";
+import { RadioButton } from "react-native-paper";
+import RazorpayCheckout from "react-native-razorpay";
+import { Key_Id } from "@env"; 
 
 interface AddMoneyModalProps {
-  visible: boolean
-  onClose: () => void
-  onSuccess: () => void
-
+  visible: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
 const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
@@ -30,56 +27,53 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("razorpay")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("razorpay");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const validateAmount = useCallback((value: string) => {
-    const numAmount = Number(value)
+    const numAmount = Number(value);
     if (isNaN(numAmount) || numAmount < 10) {
-      return "Minimum amount is ₹10"
+      return "Minimum amount is ₹10";
     }
     if (numAmount > 100000) {
-      return "Maximum amount is ₹100,000"
+      return "Maximum amount is ₹100,000";
     }
-    return ""
-  }, [])
+    return "";
+  }, []);
 
   const createPaymentIntent = async () => {
     try {
-      const token = await AsyncStorage.getItem("authToken")
-      if (!token) throw new Error("Please login to continue")
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) throw new Error("Please login to continue");
+
+      console.log("Creating payment intent with amount:", Number(amount) * 100); 
 
       const response = await axios.post(
         "https://affiliate-api.affworld.io/api/wallet/create-payment-intent",
-        {
-          amount: Number(amount),
-          payment_method: paymentMethod,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
+        { amount: amount, payment_method: paymentMethod },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       if (!response.data || !response.data.order_id) {
-        throw new Error("Invalid payment intent response")
+        throw new Error("Invalid payment intent response");
       }
-
-      return response.data
+      if (response.status === 200) {
+        return response.data;
+      }
+      return null;
     } catch (error: any) {
-      console.error("Payment Intent Error:", error.response?.data || error.message)
-      throw new Error(error.response?.data?.message || "Failed to initialize payment")
+      console.error("Payment Intent Error:", error.response?.data || error.message);
+      setError("Failed to initialize payment. Please try again.");
+      throw error;
     }
-  }
+  };
 
   const verifyPayment = async (paymentResponse: any) => {
     try {
-      const token = await AsyncStorage.getItem("authToken")
-      if (!token) throw new Error("Authentication failed")
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) throw new Error("Authentication failed");
 
       const response = await axios.post(
         "https://affiliate-api.affworld.io/api/wallet/verify-payment",
@@ -94,104 +88,92 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        },
-      )
+        }
+      );
 
-      return response.data
+      return response.data;
     } catch (error: any) {
-      console.error("Verification Error:", error.response?.data || error.message)
-      throw new Error("Payment verification failed. Please contact support if amount was deducted.")
+      console.error("Verification Error:", error.response?.data || error.message);
+      if (axios.isAxiosError(error) && error.response?.status === 504) {
+        setError("Payment failed due to timeout. Please try again later.");
+      }
+      throw new Error("Payment verification failed. Please contact support if amount was deducted.");
     }
-  }
+  };
 
   const handleSubmit = async () => {
-    const validationError = validateAmount(amount)
+    const validationError = validateAmount(amount);
     if (validationError) {
-      setError(validationError)
-      return
+      setError(validationError);
+      return;
     }
 
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
     try {
-      const paymentIntent = await createPaymentIntent()
-      console.log("Payment Intent", paymentIntent)
-
-      const options = {
-        description: "Wallet Recharge",
-        image: "../../assets/images/Loginlogo.webp",
-        currency: "INR",
-        key: Key_Id,
-        amount: Number(amount) * 100,
-        name: "Affworld",
-        order_id: paymentIntent.order_id,
-        prefill: {
-          email: 'affworldtechnologies@gmail.com',
-          name: 'Affworld',
-        },
-        theme: { color: "#F37254" },
-        send_sms_hash: true,
-        remember_customer: true,
-        retry: {
-          enabled: true,
-          max_count: 1,
-        },
-        modal: {
-          escape: false,
-          confirm_close: true,
-        },
-        external: {
-          wallets: ["paytm"],
-        },
-        notes: {
-          platform: Platform.OS,
-        },
+      const paymentIntent = await createPaymentIntent();
+      if (!paymentIntent) {
+        setError("Failed to create payment intent. Please logout and try again.");
+        setLoading(false);
+        return;
       }
 
-      console.log("Razorpay Options:", options)
+      console.log("Payment Intent:", paymentIntent);
 
+      const options = {
+        key: Key_Id, 
+        amount: paymentIntent.amount,
+        currency: "INR",
+        name: "Affworld",
+        description: "Recharge",
+        order_id: paymentIntent.order_id,
+        prefill: {
+          email: "affworldtechnologies@gmail.com",
+          name: "Affworld",
+        },
+        theme: { color: "#F37254" },
+      };
+
+      console.log("Razorpay Options:", options);
+      console.log("RazorpayCheckout:", RazorpayCheckout);
       RazorpayCheckout.open(options)
-        .then(async (data: any) => {
-          console.log("Payment Success:", data)
+        .then(async (data) => {
+          console.log("Payment Success:", data);
           try {
             const verificationResult = await verifyPayment({
               ...data,
               order_id: paymentIntent.order_id,
-            })
-
+            });
             if (verificationResult.success) {
-              Alert.alert("Success", "Payment successful!")
-              onSuccess()
-              onClose()
+              Alert.alert("Success", "Payment successful!");
+              onSuccess();
+              onClose();
             } else {
-              throw new Error("Payment verification failed")
+              setError("Payment verification failed.");
             }
-          } catch (error) {
-            console.error("Verification Error:", error)
-            setError("Payment verification failed. Please contact support.")
+          } catch (verifyError:any) {
+            setError(verifyError.message);
           }
         })
         .catch((error: any) => {
-          console.error("Payment Error:", error)
-          if (error.code === "PAYMENT_CANCELLED") {
-            setError("Payment was cancelled. Please try again.")
-          } else if (error.description?.includes("network")) {
-            setError("Network error. Please check your internet connection.")
-          } else {
-            console.log("Payment", error)
-            setError(error.message || "Payment failed. Please try again.")
+          console.error("Razorpay Payment Error:", error);
+          let errorDesc = "Payment failed. Please try again.";
+          if (error && error.code) {
+            errorDesc = error.description || `Error Code: ${error.code}`;
+            if (error.reason) {
+              errorDesc += ` - ${error.reason}`;
+            }
           }
+          setError(errorDesc);
         })
-        .finally(() => {
-          setLoading(false)
-        })
+        .finally(() => setLoading(false));
     } catch (error: any) {
-      console.error("Payment Setup Error:", error)
-      setError(error.message || "Failed to initialize payment. Please try again.")
-      setLoading(false)
+      console.error("Setup Error:", error);
+      setError(error.message || "Failed to initialize payment.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -265,8 +247,8 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
         </View>
       </TouchableWithoutFeedback>
     </Modal>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -348,7 +330,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
   },
-})
+});
 
-export default AddMoneyModal
-
+export default AddMoneyModal;
