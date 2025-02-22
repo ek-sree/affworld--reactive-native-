@@ -5,21 +5,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-nati
 import { Menu, Divider, Provider } from "react-native-paper";
 import AddMoneyModal from "../components/AddMoneyModal";
 import { API } from "../constant/api";
+import { FormattedTransaction, WalletTransaction } from "../interface/IWallet";
 
-interface WalletTransaction {
-  _id: string;
-  amount: number;
-  order_id: string;
-  timestamp: string;
-  verified: boolean | string;
-}
 
-interface FormattedTransaction {
-  date: string;
-  orderId: string;
-  amount: string;
-  status: string;
-}
 
 const WalletScreen = () => {
   const [visible, setVisible] = useState(false);

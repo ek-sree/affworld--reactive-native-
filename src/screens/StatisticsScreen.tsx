@@ -13,34 +13,9 @@ import {
 } from 'react-native';
 import ExecutionModal from '../components/ExecutionModal';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
+import { ModalPosition, StatisticsItem } from '../interface/IStatistics';
+import { ExecutionData } from '../interface/IExecution';
 
-interface StatisticsItem {
-  _id: string;
-  name: string;
-  serviceId: string;
-  quantity: number;
-  timing: string;
-  affiliate_id: string;
-  link: string;
-  maxExecutions: number;
-  executionCount: number;
-  status: string;
-  totalCharges: number;
-  totalQuantity: number;
-  [key: string]: any;
-}
-
-interface ExecutionData {
-  timestamp: string;
-  response: {
-    order: number;
-  };
-}
-
-interface ModalPosition {
-  x: number;
-  y: number;
-}
 
 const StatisticsScreen = () => {
   const [affiliate_id, setAffiliate_id] = useState('');
@@ -50,7 +25,7 @@ const StatisticsScreen = () => {
   const [modalPosition, setModalPosition] = useState<ModalPosition>({ x: 0, y: 0 });
   const [isExecutionModal, setIsExecutionModal] = useState<boolean>(false);
   const [selectedExecutions, setSelectedExecutions] = useState<ExecutionData[]>([]);
-  const [endReached, setEndReached] = useState<boolean>(false); // Track if end is reached
+  const [endReached, setEndReached] = useState<boolean>(false); 
 
   const totalContentWidth = 840;
 

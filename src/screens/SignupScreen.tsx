@@ -6,6 +6,7 @@ import { Alert, Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, Sty
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { validateBio, validateEmail, validateName } from "../utils/validation";
 import { API } from "../constant/api";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 
 const {width} = Dimensions.get('window')
@@ -92,16 +93,16 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             <View style={styles.topSection}>
-              <Image 
+              <Animated.Image entering={FadeInDown.delay(200).duration(500)} 
                 style={styles.imageStyle} 
                 source={require('../../assets/images/Loginlogo.webp')} 
                 resizeMode="contain"
               />
-              <Text style={styles.welcomeText}>Welcome !</Text>
-              <Text style={styles.subtitleText}>Sign up to continue</Text>
+              <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.welcomeText}>Welcome !</Animated.Text>
+              <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.subtitleText}>Sign up to continue</Animated.Text>
             </View>
   
-            <View style={styles.formSection}>
+            <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formSection}>
               <View style={styles.inputContainer}>
                 <View style={styles.iconContainer}>
                   <Icon name="user" size={20} style={styles.icon} />
@@ -186,7 +187,7 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
               <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate("Login")}>
                 <Text style={styles.forgotPasswordText}>Already have an account?</Text>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

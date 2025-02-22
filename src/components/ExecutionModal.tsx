@@ -1,26 +1,8 @@
 import axios from "axios";
 import { useState } from "react";
 import { Text, TouchableOpacity, TouchableWithoutFeedback, Modal, View, StyleSheet, ScrollView } from "react-native";
+import { ExecutionData, ExecutionDetails, ExecutionModalProps } from "../interface/IExecution";
 
-interface ExecutionData {
-  timestamp: string;
-  response: {
-    order?: number; 
-    error?: string; 
-  };
-  error?: string; 
-}
-
-interface ExecutionDetails{
-    remains:string;
-    status:string;
-}
-
-interface ExecutionModalProps {
-  visible: boolean;
-  onClose: () => void;
-  executionData: ExecutionData[];
-}
 
 const ExecutionModal = ({ visible, onClose, executionData }: ExecutionModalProps) => {
   const [openDetails, setOpenDetails] = useState<boolean>(false);
