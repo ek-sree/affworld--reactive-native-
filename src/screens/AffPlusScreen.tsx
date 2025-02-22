@@ -195,8 +195,6 @@ useEffect(() => {
       payload = basePayload;
     }
     const token = await AsyncStorage.getItem('authToken');
-console.log("Checking token and affiliation_id", token, affiliate_id,payload);
-
     try {
       const response = await axios.post('https://jpi.affworld.io/api/jobs', payload, {
         headers: {
@@ -206,6 +204,7 @@ console.log("Checking token and affiliation_id", token, affiliate_id,payload);
       });
       if (response.status === 200) {
         Alert.alert('Success', 'Job submitted successfully!');
+        fetchInitialData()
         setLink('');
         setQuantity('100');
         setMaxExecutions('1');

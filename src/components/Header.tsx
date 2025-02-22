@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUserDetails } from '../context/UserDetailsContext';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +13,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ title, notificationCount = 0, navigation }) => {
+  const { userDetailsData } = useUserDetails();
   const bellRotation = new Animated.Value(0);
 
   useEffect(() => {
@@ -57,13 +59,23 @@ const Header: React.FC<HeaderProps> = ({ title, notificationCount = 0, navigatio
                 colors={['#3b82f6', '#2563eb']}
                 style={styles.avatarContainer}
               >
-                <MaterialCommunityIcons name="account" size={24} color="#ffffff" />
+                {userDetailsData?.profile_pic ? (
+                  <Image 
+                    source={{ uri: userDetailsData.profile_pic }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <MaterialCommunityIcons name="account" size={24} color="#ffffff" />
+                )}
               </LinearGradient>
             </TouchableOpacity>
             <View style={styles.titleContainer}>
               <Text style={styles.welcomeText}>
                 <Feather name="sun" size={14} color="#fbbf24" /> Welcome back
               </Text>
+              {userDetailsData?.name && (
+                <Text style={styles.userName}>{userDetailsData.name}</Text>
+              )}
             </View>
           </View>
 
@@ -127,6 +139,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  profileImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
   titleContainer: {
     flex: 1,
   },
@@ -135,13 +152,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,
-    marginBottom: 4,
+    marginBottom: 4, 
   },
-  emailText: {
-    color: '#1e293b',
-    fontSize: 16,
-    fontWeight: '700',
+  userName: {
+    color: 'rgba(32, 31, 31, 0.7)', 
+    fontSize: 16,     
+    fontWeight: '700', 
     letterSpacing: 0.2,
+    paddingLeft:15
   },
   notificationContainer: {
     padding: 4,

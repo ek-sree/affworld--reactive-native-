@@ -63,8 +63,9 @@ const handleWalletPress = () => {
           affiliate_id,
           name,
           email,
-          bio
+          bio,
         });
+        setProfileImageUrl(response.data.profile_pic)
         const year = new Date(response.data.created_at).getFullYear();
         setProfileData({
           created_at:year,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { DrawerParamList } from '../types/types';
 import AffPlusScreen from '../screens/AffPlusScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
+import { useUserDetails } from '../context/UserDetailsContext';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -18,8 +19,15 @@ interface CustomDrawerContentProps extends DrawerContentComponentProps {
   logout: () => void;
 }
 
-const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({ logout, ...props }) => {
+const CustomDrawerContent: React.FC<CustomDrawerContentProps> = (props) => {
+  const { logout } = props;
   const { userEmail } = useAuth();
+  const {userDetailsData} = useUserDetails()
+
+  const handleProfilePress = () => {
+    props.navigation.navigate('Profile');
+    props.navigation.closeDrawer();
+  };
 
   return (
     <View style={styles.drawerContainer}>
@@ -27,20 +35,30 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({ logout, ...pr
         colors={['#2563eb', '#1d4ed8']}
         style={styles.drawerHeader}
       >
-        <View style={styles.profileSection}>
+        <TouchableOpacity 
+          style={styles.profileSection}
+          onPress={handleProfilePress}
+          activeOpacity={0.8}
+        >
           <View style={styles.avatarContainer}>
+            {userDetailsData?.profile_pic ? (
+                <Image 
+                source={{ uri: userDetailsData.profile_pic }}
+                style={styles.profileImage}
+                />
+                            ) : (
             <MaterialCommunityIcons name="account" size={32} color="#fff" />
+                )}
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userEmail} numberOfLines={1}>
-              {userEmail}
+              {userDetailsData?.name}
             </Text>
             <View style={styles.statusContainer}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Online</Text>
+              <Text style={styles.statusText}>{userDetailsData?.email}</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </LinearGradient>
 
       <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
@@ -78,7 +96,7 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = ({ logout, ...pr
 };
 
 const DrawerNavigator = () => {
-  const { logout, userEmail } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <Drawer.Navigator
@@ -137,17 +155,6 @@ const DrawerNavigator = () => {
         }}
       />
       <Drawer.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{
-          drawerIcon: ({ color }) => (
-            <View style={[styles.iconContainer, { backgroundColor: color === '#fff' ? 'rgba(255,255,255,0.2)' : '#f1f5f9' }]}>
-              <MaterialCommunityIcons name="account" size={22} color={color} />
-            </View>
-          ),
-        }}
-      />
-      <Drawer.Screen 
         name="Wallet" 
         component={WalletScreen}
         options={{
@@ -180,6 +187,13 @@ const DrawerNavigator = () => {
           ),
         }}
       />
+      <Drawer.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          drawerItemStyle: { display: 'none' }, 
+        }}
+      />
     </Drawer.Navigator>
   );
 };
@@ -188,6 +202,11 @@ const styles = StyleSheet.create({
   drawerContainer: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  profileImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   drawerHeader: {
     padding: 20,
@@ -220,13 +239,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4ade80',
-    marginRight: 6,
-  },
   statusText: {
     color: '#e0f2fe',
     fontSize: 13,
@@ -252,6 +264,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
+    marginRight:20
   },
   bottomSection: {
     padding: 16,
