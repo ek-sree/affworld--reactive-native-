@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../types/types';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API } from '../constant/api';
 
 type HomeScreenNavigationProp = StackNavigationProp<ParamListBase>;
 
@@ -43,7 +44,7 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
         return;
       }
     try {
-      const response =  await axios.get(`https://affiliate-api.affworld.io/api/wallet/total-remaining-balance`, {
+      const response =  await axios.get(`${API}/api/wallet/total-remaining-balance`, {
         headers: { Authorization: `Bearer ${token}` },
       })      
       if(response.status==200){

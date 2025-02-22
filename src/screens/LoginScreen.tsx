@@ -32,7 +32,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   
     try {
-      console.log("Sending login request...");
       const response = await axios.post(
         `${API}/api/login`,
         new URLSearchParams({

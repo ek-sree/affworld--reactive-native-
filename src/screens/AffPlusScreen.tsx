@@ -15,6 +15,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/types';
+import { API } from '../constant/api';
 
 
 interface Service {
@@ -63,13 +64,13 @@ async function fetchInitialData(){
         return;
       }
       const [getServiceListResponse, getAffiliationIdResponse,balanceResponse] = await Promise.all([
-        axios.get<CategoryData[]>('https://jpi.affworld.io/api/service-list'),
-        axios.get('https://affiliate-api.affworld.io/api/affiliates/', {
+        axios.get<CategoryData[]>(`${API}/api/service-list`),
+        axios.get(`${API}/api/affiliates/`, {
             headers: {
               Authorization: `Bearer ${await AsyncStorage.getItem('authToken')}`,
             },
           }),
-          axios.get(`https://affiliate-api.affworld.io/api/wallet/total-remaining-balance`, {
+          axios.get(`${API}/api/wallet/total-remaining-balance`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
       ])

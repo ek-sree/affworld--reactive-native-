@@ -2,6 +2,7 @@ import axios from "axios";
 import { useState } from "react";
 import { Text, TouchableOpacity, TouchableWithoutFeedback, Modal, View, StyleSheet, ScrollView } from "react-native";
 import { ExecutionData, ExecutionDetails, ExecutionModalProps } from "../interface/IExecution";
+import { API } from "../constant/api";
 
 
 const ExecutionModal = ({ visible, onClose, executionData }: ExecutionModalProps) => {
@@ -13,7 +14,7 @@ const ExecutionModal = ({ visible, onClose, executionData }: ExecutionModalProps
   const handleShowDetails = async(item: ExecutionData) => {
     setOpenDetails(true);
     try {
-        const response = await axios.post('https://jpi.affworld.io/api/check-order-status',{
+        const response = await axios.post(`${API}/api/check-order-status`,{
             order: displayData.response.order
         })
         console.log("response: " , response.data);

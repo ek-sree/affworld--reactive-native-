@@ -15,6 +15,7 @@ import ExecutionModal from '../components/ExecutionModal';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
 import { ModalPosition, StatisticsItem } from '../interface/IStatistics';
 import { ExecutionData } from '../interface/IExecution';
+import { API } from '../constant/api';
 
 
 const StatisticsScreen = () => {
@@ -31,7 +32,7 @@ const StatisticsScreen = () => {
 
   async function getAffiliationId() {
     try {
-      const response = await axios.get('https://affiliate-api.affworld.io/api/affiliates/', {
+      const response = await axios.get(`${API}/api/affiliates/`, {
         headers: {
           Authorization: `Bearer ${await AsyncStorage.getItem('authToken')}`,
         },
@@ -47,7 +48,7 @@ const StatisticsScreen = () => {
   const handleStaticsData = async () => {
     try {
       setIsLoadingStatistics(true);
-      const response = await axios.get(`https://jpi.affworld.io/api/particularjobs/${affiliate_id}`);
+      const response = await axios.get(`${API}/api/particularjobs/${affiliate_id}`);
       if (Array.isArray(response.data)) {
         setStatisticsData(response.data);
       } else {
