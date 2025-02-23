@@ -122,7 +122,10 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
       }
 
       console.log("Payment Intent:", paymentIntent);
-
+      if(!Key_Id){
+        setError("razorPay key not found")
+        return;
+      }
       const options = {
         key: Key_Id, 
         amount: paymentIntent.amount,
