@@ -64,16 +64,18 @@ async function fetchInitialData(){
         return;
       }
       const [getServiceListResponse, getAffiliationIdResponse,balanceResponse] = await Promise.all([
-        axios.get<CategoryData[]>(`${API}/api/service-list`),
+        axios.get<CategoryData[]>(`https://jpi.affworld.io/api/service-list`),
         axios.get(`${API}/api/affiliates/`, {
             headers: {
               Authorization: `Bearer ${await AsyncStorage.getItem('authToken')}`,
             },
           }),
-          axios.get(`${API}/api/wallet/total-remaining-balance`, {
+          axios.get(`https://affiliate-api.affworld.io/api/wallet/total-remaining-balance`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
       ])
+      console.log("IS working??");
+      
       if(getServiceListResponse.status==200) {
         setApiData(getServiceListResponse.data);
       }

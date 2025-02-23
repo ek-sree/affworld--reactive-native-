@@ -48,7 +48,7 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
       const token = await AsyncStorage.getItem("authToken");
       if (!token) throw new Error("Please login to continue");
 
-      console.log("Creating payment intent with amount:", Number(amount) * 100); 
+      console.log("Creating payment intent with amount:",amount)
 
       const response = await axios.post(
         "https://affiliate-api.affworld.io/api/wallet/create-payment-intent",
@@ -60,6 +60,8 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
         throw new Error("Invalid payment intent response");
       }
       if (response.status === 200) {
+        console.log("Created payment intent");
+        
         return response.data;
       }
       return null;
@@ -197,16 +199,6 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
                     color="#00BFFF"
                   />
                   <Text style={styles.radioLabel}>Razorpay</Text>
-                </View>
-
-                <View style={styles.radioOption}>
-                  <RadioButton
-                    value="upi"
-                    status={paymentMethod === "upi" ? "checked" : "unchecked"}
-                    onPress={() => setPaymentMethod("upi")}
-                    color="#00BFFF"
-                  />
-                  <Text style={styles.radioLabel}>Direct UPI</Text>
                 </View>
               </View>
 

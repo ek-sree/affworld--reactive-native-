@@ -48,7 +48,7 @@ const StatisticsScreen = () => {
   const handleStaticsData = async () => {
     try {
       setIsLoadingStatistics(true);
-      const response = await axios.get(`${API}/api/particularjobs/${affiliate_id}`);
+      const response = await axios.get(`https://jpi.affworld.io/api/particularjobs/${affiliate_id}`);
       if (Array.isArray(response.data)) {
         setStatisticsData(response.data);
       } else {
