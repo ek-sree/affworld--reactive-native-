@@ -115,6 +115,8 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
 
     try {
       const paymentIntent = await createPaymentIntent();
+      console.log("Payment intent: " + paymentIntent);
+      
       if (!paymentIntent) {
         setError("Failed to create payment intent. Please logout and try again.");
         setLoading(false);

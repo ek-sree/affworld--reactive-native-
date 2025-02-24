@@ -13,4 +13,5 @@ export type DrawerParamList = {
   Wallet: undefined;
   AffPlus: undefined;
   Statistics: undefined;
+  Offer: undefined;
 };

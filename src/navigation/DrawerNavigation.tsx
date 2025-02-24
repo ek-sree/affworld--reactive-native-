@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
-import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { AntDesign, MaterialCommunityIcons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -12,6 +12,7 @@ import { DrawerParamList } from '../types/types';
 import AffPlusScreen from '../screens/AffPlusScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import { useUserDetails } from '../context/UserDetailsContext';
+import OfferScreen from '../screens/OfferScreen';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -183,6 +184,17 @@ const DrawerNavigator = () => {
           drawerIcon: ({ color }) => (
             <View style={[styles.iconContainer, { backgroundColor: color === '#fff' ? 'rgba(255,255,255,0.2)' : '#f1f5f9' }]}>
               <AntDesign name="areachart" size={22} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Drawer.Screen 
+        name="Offer" 
+        component={OfferScreen}
+        options={{
+          drawerIcon: ({ color }) => (
+            <View style={[styles.iconContainer, { backgroundColor: color === '#fff' ? 'rgba(255,255,255,0.2)' : '#f1f5f9' }]}>
+              <MaterialIcons name="local-offer" size={22} color={color} />
             </View>
           ),
         }}

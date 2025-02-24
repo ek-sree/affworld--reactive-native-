@@ -1,0 +1,644 @@
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Image, Animated, Platform } from "react-native";
+import { AntDesign, Feather, MaterialIcons, Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { useEffect, useState, useRef } from "react";
+import { LinearGradient } from 'expo-linear-gradient';
+
+type OfferDetailsModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  name: string;
+};
+
+interface OfferDetails {
+  CAP?: string;
+  CampaignPhoto?: string;
+  KPI?: string;
+  Model?: string;
+  Tags?: string[];
+  _id?: string;
+  adult?: boolean;
+  advitisor_id?: string;
+  category?: string;
+  country?: string;
+  description?: string;
+  image_url?: string;
+  name?: string;
+  payment_frequency?: string;
+  paymentterms?: string;
+  payouts?: {
+    Deposit?: number;
+    FTD?: number;
+    Qualified?: number;
+    Registration?: number;
+  };
+  status?: string;
+  type?: string;
+  url?: string;
+  validation_time?: string;
+  behavioural_retargeting?: boolean;
+  brand_bidding?: boolean;
+  cashback?: boolean;
+  email?: boolean;
+  incentive?: boolean;
+  popunder_clickunder?: boolean;
+  sem?: boolean;
+  sms?: boolean;
+  social_media_ads?: boolean;
+  toolbar?: boolean;
+  youtube?: boolean;
+  conversion_flows?: string;
+}
+
+export default function OfferDetailsModal({ visible, onClose, name }: OfferDetailsModalProps) {
+  const [offerDetails, setOfferDetails] = useState<OfferDetails | null>(null);
+  const [loading, setLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(400)).current;
+
+  async function getOfferDetails() {
+    try {
+      setLoading(true);
+      const response = await axios.get(`https://admin-api.affworld.io/campaign/by-name/${name}`);
+      if (response.status === 200) {
+        setOfferDetails(response.data);
+        animateContent();
+      }
+    } catch (error) {
+      console.error("Error fetching offer details:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const animateContent = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 30,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    if (visible && name) {
+      getOfferDetails();
+    }
+  }, [visible, name]);
+
+  const renderStatusBadge = (status?: string) => {
+    const getStatusColor = () => {
+      switch (status?.toLowerCase()) {
+        case 'active': return ['#34D399', '#10B981'];
+        case 'pending': return ['#FBBF24', '#F59E0B'];
+        default: return ['#9CA3AF', '#6B7280'];
+      }
+    };
+
+    return (
+      <LinearGradient
+        colors={getStatusColor()}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.statusBadge}
+      >
+        <Text style={styles.statusText}>{status || 'N/A'}</Text>
+      </LinearGradient>
+    );
+  };
+
+  const renderTrafficSourcesSection = () => {
+    const trafficSources = [
+      { source: "Cashback", allowed: offerDetails?.cashback },
+      { source: "Popup/ClickUnder", allowed: offerDetails?.popunder_clickunder },
+      { source: "Behavioral Retargeting", allowed: offerDetails?.behavioural_retargeting },
+      { source: "SEM", allowed: offerDetails?.sem },
+      { source: "SMS", allowed: offerDetails?.sms },
+      { source: "Email", allowed: offerDetails?.email },
+      { source: "Brand Bidding", allowed: offerDetails?.brand_bidding },
+      { source: "Social Media (ads)", allowed: offerDetails?.social_media_ads },
+      { source: "Incentive", allowed: offerDetails?.incentive },
+      { source: "Toolbar", allowed: offerDetails?.toolbar },
+      { source: "Adult", allowed: offerDetails?.adult },
+      { source: "Youtube", allowed: offerDetails?.youtube },
+    ];
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Traffic Sources</Text>
+        <View style={styles.trafficSourcesGrid}>
+          {trafficSources.map((item, index) => (
+            <View key={index} style={styles.trafficSourceItem}>
+              {item.allowed ? (
+                <MaterialIcons name="check-circle" size={20} color="#10B981" />
+              ) : (
+                <MaterialIcons name="cancel" size={20} color="#EF4444" />
+              )}
+              <Text style={styles.trafficSourceText}>{item.source}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderPayoutTable = () => {
+    if (!offerDetails?.payouts) return null;
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Payout Structure</Text>
+        <View style={styles.payoutTable}>
+          {Object.entries(offerDetails.payouts).map(([key, value]) => (
+            value > 0 && (
+              <View key={key} style={styles.payoutRow}>
+                <Text style={styles.payoutType}>{key}</Text>
+                <View style={styles.payoutAmountContainer}>
+                  <Text style={styles.payoutAmount}>₹{value}</Text>
+                </View>
+              </View>
+            )
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onClose}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContent}>
+              <MaterialIcons name="payment" size={48} color="#4299E1" />
+              <Text style={styles.loadingText}>Loading offer details...</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.overlay}>
+          <Animated.View 
+            style={[
+              styles.modalContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            <LinearGradient
+              colors={['#4299E1', '#3182CE']}
+              style={styles.header}
+            >
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <AntDesign name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <View style={styles.headerContent}>
+                <View style={styles.photoContainer}>
+                  <View style={[
+                    styles.photoPlaceholder,
+                    offerDetails?.image_url && { backgroundColor: 'transparent' }
+                  ]}>
+                    {offerDetails?.image_url ? (
+                      <Image 
+                        source={{ uri: offerDetails.image_url }}
+                        style={styles.offerImage}
+                      />
+                    ) : (
+                      <Ionicons name="image-outline" size={40} color="#FFFFFF" />
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.headerTitle}>{offerDetails?.name || name}</Text>
+                {renderStatusBadge(offerDetails?.status)}
+              </View>
+            </LinearGradient>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+            >
+              <View style={styles.quickInfo}>
+                <View style={styles.infoCard}>
+                  <MaterialIcons name="attach-money" size={24} color="#4299E1" />
+                  <Text style={styles.infoValue}>
+                    ₹{offerDetails?.payouts?.Deposit || '0'}
+                  </Text>
+                  <Text style={styles.infoLabel}>Per Action</Text>
+                </View>
+                <View style={styles.infoCard}>
+                  <MaterialIcons name="category" size={24} color="#4299E1" />
+                  <Text style={styles.infoValue}>
+                    {offerDetails?.category || 'N/A'}
+                  </Text>
+                  <Text style={styles.infoLabel}>Category</Text>
+                </View>
+                <View style={styles.infoCard}>
+                  <MaterialIcons name="public" size={24} color="#4299E1" />
+                  <Text style={styles.infoValue}>
+                    {offerDetails?.country || 'Global'}
+                  </Text>
+                  <Text style={styles.infoLabel}>Region</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity style={styles.joinButton}>
+                <LinearGradient
+                  colors={['#4299E1', '#3182CE']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.gradientButton}
+                >
+                  <Text style={styles.joinButtonText}>Join Affiliate Program</Text>
+                  <AntDesign name="arrowright" size={20} color="#FFFFFF" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Program Details</Text>
+                <Text style={styles.description}>
+                  {offerDetails?.description || 'No description available'}
+                </Text>
+              </View>
+
+              {renderPayoutTable()}
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Campaign Information</Text>
+                <View style={styles.infoGrid}>
+                  {[
+                    { label: "Campaign Type", value: offerDetails?.type || "Public" },
+                    { label: "Campaign Model", value: offerDetails?.Model || "CPL" },
+                    { label: "Validation Time", value: offerDetails?.validation_time || "NET 30" },
+                    { label: "Payment Frequency", value: offerDetails?.payment_frequency || "NET 30" },
+                    { label: "Country", value: offerDetails?.country || "India" },
+                  ].map((item, index) => (
+                    <View key={index} style={styles.infoRow}>
+                      <Text style={styles.infoGridLabel}>{item.label}</Text>
+                      <Text style={styles.infoGridValue}>{item.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {renderTrafficSourcesSection()}
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Terms & Conditions</Text>
+                <Text style={styles.description}>
+                  {offerDetails?.conversion_flows || 'Please contact support for detailed terms and conditions.'}
+                </Text>
+              </View>
+
+              <View style={[styles.card, styles.lastCard]}>
+                <Text style={styles.cardTitle}>Additional Benefits</Text>
+                <View style={styles.benefitsList}>
+                  {[
+                    "24/7 Campaign Monitoring",
+                    "Realtime Analytics",
+                    "Auto-updating Banners",
+                    "API Access",
+                    "Dedicated Support",
+                  ].map((benefit, index) => (
+                    <View key={index} style={styles.benefitItem}>
+                      <Feather name="check-circle" size={20} color="#10B981" />
+                      <Text style={styles.benefitText}>{benefit}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.card2}>
+  <Text style={styles.cardTitle}>Advantages of using Affworld Tech. Affiliation via Affworld</Text>
+  <Text style={styles.description}>
+    This affiliate program is a part of the INRDeals affiliate network. After signing up for Spartan Poker Campaign via INRDeals you won't have to sign up for any other network anymore. No more applying for programs or searching for the best Payouts as INRDeals offers fully managed Affiliate Marketing services that yield maximum returns with fastest payments all on a single platform. Our technology works across sites, apps, and social networks so you can focus on your business, earn more, and avoid the hassle of managing countless affiliate programs.{' '}
+    <Text style={styles.linkText} onPress={() => {/* Add your link handler here */}}>
+      Still not convinced? Click here
+    </Text>{' '}
+    to Check the list of benefits you can get as an INRDeals Publisher!
+  </Text>
+</View>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "94%",
+    maxHeight: "90%",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 20,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  header: {
+    padding: 20,
+    paddingBottom: 30,
+  },
+  headerContent: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  closeButton: {
+    position: "absolute",
+    right: 16,
+    top: 16,
+    zIndex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 20,
+    padding: 8,
+  },
+  photoContainer: {
+    alignItems: "center",
+  },
+  photoPlaceholder: {
+    width: 100,
+    height: 100,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  offerImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  quickInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginHorizontal: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2D3748",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: "#718096",
+  },
+  joinButton: {
+    marginBottom: 24,
+  },
+  gradientButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  joinButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  statusText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  lastCard: {
+    marginBottom: 0,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2D3748",
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 14,
+    color: "#4A5568",
+    lineHeight: 22,
+  },
+  infoGrid: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  infoGridLabel: {
+    fontSize: 14,
+    color: "#64748B",
+    flex: 1,
+  },
+  infoGridValue: {
+    fontSize: 14,
+    color: "#2D3748",
+    fontWeight: "500",
+    flex: 1,
+    textAlign: "right",
+  },
+  trafficSourcesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  trafficSourceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    width: "47%",
+    backgroundColor: "#F8FAFC",
+    padding: 12,
+    borderRadius: 8,
+  },
+  trafficSourceText: {
+    fontSize: 14,
+    color: "#4A5568",
+    flex: 1,
+  },
+  payoutTable: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  payoutRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  payoutType: {
+    fontSize: 14,
+    color: "#4A5568",
+  },
+  payoutAmountContainer: {
+    backgroundColor: "#EBF8FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  payoutAmount: {
+    fontSize: 14,
+    color: "#3182CE",
+    fontWeight: "600",
+  },
+  benefitsList: {
+    gap: 12,
+  },
+  benefitItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  benefitText: {
+    fontSize: 14,
+    color: "#4A5568",
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingContent: {
+    backgroundColor: "#FFFFFF",
+    padding: 24,
+    borderRadius: 16,
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#4A5568",
+    fontWeight: "500",
+  },
+  card2: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginTop:15,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  linkText: {
+    color: '#4299E1',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
+  },
+});
