@@ -46,9 +46,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       );  
       const token = response.data.access_token;
       await login(token, username);
-  
-      Alert.alert('Welcome Back!', 'Login successful');
-    } catch (error: unknown) {  
+      } catch (error: unknown) {  
       console.log("Error in request:", error);
   
       if (axios.isAxiosError(error)) {

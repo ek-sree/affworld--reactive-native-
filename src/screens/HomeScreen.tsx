@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Animated,
+  Easing
+} from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -28,53 +36,124 @@ const campaigns: Campaign[] = [
 ];
 
 const HomeScreen: React.FC<HomeScreenProps> = () => {
-    const [totalBalance, setTotalBalance] = useState<number>(0);
-  
+  const [totalBalance, setTotalBalance] = useState<number>(0);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const balanceAnim = useRef(new Animated.Value(0)).current;
+  const progressAnims = useRef(campaigns.map(() => new Animated.Value(0))).current;
   
   const handleWalletPress = () => {
     navigation.navigate('Wallet');
   };
-  
 
-  async function fetchWalletBalance(){
+  const handleNavigate = (screen: keyof RootStackParamList) => {
+    navigation.navigate(screen);
+  };
+
+  async function fetchWalletBalance() {
     const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        console.error("No token found! Ensure user is logged in.");
-        return;
-      }
+    if (!token) {
+      console.error("No token found! Ensure user is logged in.");
+      return;
+    }
     try {
-      const response =  await axios.get(`${API}/api/wallet/total-remaining-balance`, {
+      const response = await axios.get(`${API}/api/wallet/total-remaining-balance`, {
         headers: { Authorization: `Bearer ${token}` },
-      })      
-      if(response.status==200){
+      });
+      if (response.status == 200) {
         setTotalBalance(parseFloat(response.data.total_remaining_balance.toFixed(2)));
+        animateBalance();
       }
     } catch (error) {
-      console.error("Error occured while fetching wallet balance",error)
+      console.error("Error occurred while fetching wallet balance", error);
     }
   }
-
-  useEffect(()=>{
-    fetchWalletBalance()
-  },[])
-
-  const renderCampaign = (campaign: Campaign) => (
-    <View key={campaign.name} style={styles.campaignItem}>
-      <View style={styles.campaignHeader}>
-        <Text style={styles.campaignName}>{campaign.name}</Text>
-        <Text style={styles.campaignProgress}>{campaign.progress}%</Text>
+  
+  const animateBalance = () => {
+    Animated.timing(balanceAnim, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: false,
+      easing: Easing.out(Easing.ease)
+    }).start();
+  };
+  
+  const animateProgressBars = () => {
+    progressAnims.forEach((anim, index) => {
+      Animated.timing(anim, {
+        toValue: campaigns[index].progress / 100,
+        duration: 1000,
+        delay: index * 300,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.ease)
+      }).start();
+    });
+  };
+  
+  useEffect(() => {
+    fetchWalletBalance();
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      animateProgressBars();
+    });
+  }, []);
+  
+  const renderCampaign = (campaign: Campaign, index: number) => {
+    const progressWidth = progressAnims[index].interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0%', '100%']
+    });
+    
+    const animatedWidth = {
+      width: Animated.multiply(
+        progressAnims[index],
+        Animated.multiply(
+          campaign.progress,
+          new Animated.Value(1)
+        )
+      ).interpolate({
+        inputRange: [0, 100],
+        outputRange: ['0%', '100%']
+      })
+    };
+    
+    return (
+      <View key={campaign.name} style={styles.campaignItem}>
+        <View style={styles.campaignHeader}>
+          <Text style={styles.campaignName}>{campaign.name}</Text>
+          <Text style={styles.campaignProgress}>{campaign.progress}%</Text>
+        </View>
+        <View style={styles.progressBarBackground}>
+          <Animated.View style={{ width: progressWidth }}>
+            <LinearGradient
+              colors={['#6366F1', '#4F46E5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.progressBarFill}
+            />
+          </Animated.View>
+        </View>
       </View>
-      <View style={styles.progressBarBackground}>
-        <LinearGradient
-          colors={['#6366F1', '#4F46E5']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.progressBarFill, { width: `${campaign.progress}%` }]}
-        />
-      </View>
-    </View>
-  );
+    );
+  };
+  
+  const displayedBalance = balanceAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, totalBalance]
+  });
 
   return (
     <ScrollView style={styles.container}>
@@ -82,22 +161,41 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
         colors={['#4F46E5', '#6366F1']}
         style={styles.header}
       >
-        <View style={styles.balanceCard}>
+        <Animated.View 
+          style={[
+            styles.balanceCard,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+          ]}
+        >
           <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.balanceAmount}>₹{totalBalance}</Text>
+          <Animated.Text style={styles.balanceAmount}>
+            {displayedBalance}
+          </Animated.Text>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleWalletPress}>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={handleWalletPress}
+              activeOpacity={0.8}
+            >
               <MaterialCommunityIcons name="plus" size={20} color="white" />
               <Text style={styles.buttonText}>Add Money</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              activeOpacity={0.8}
+            >
               <MaterialCommunityIcons name="bank-transfer" size={20} color="white" />
               <Text style={styles.buttonText}>Withdraw</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.statsContainer}>
+        <Animated.View 
+          style={[
+            styles.statsContainer,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+          ]}
+        >
           <View style={styles.statsCard}>
             <View style={styles.statsHeader}>
               <MaterialCommunityIcons name="trending-up" size={24} color="#4F46E5" />
@@ -119,14 +217,40 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
               <Text style={[styles.statsChange, styles.negativeChange]}>-3.2%</Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </LinearGradient>
 
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionsScroll}>
+      <Animated.Text 
+        style={[
+          styles.sectionTitle, 
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        Quick Actions
+      </Animated.Text>
+      
+      <Animated.ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={[
+          styles.quickActionsScroll,
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
         <View style={styles.quickActions}>
-          {['Campaigns', 'Statistics', 'Wallet', 'Affpulse', 'Settings'].map((action, index) => (
-            <TouchableOpacity key={index} style={styles.actionItem}>
+          {['Conversions', 'Statistics', 'Wallet', 'AffPlus', 'Offer'].map((action, index) => (
+            <TouchableOpacity 
+              key={index} 
+              style={styles.actionItem}
+              activeOpacity={0.8}
+              onPress={() => handleNavigate(action as keyof RootStackParamList)}
+            >
               <LinearGradient
                 colors={['#F8FAFC', '#F1F5F9']}
                 style={styles.actionItemGradient}
@@ -141,22 +265,46 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
-      <View style={styles.campaignsSection}>
+      <Animated.View 
+        style={[
+          styles.campaignsSection,
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Active Campaigns</Text>
-          <TouchableOpacity style={styles.viewAllButton}>
+          <TouchableOpacity 
+            style={styles.viewAllButton}
+            activeOpacity={0.8}
+          >
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.campaignsList}>{campaigns.map(renderCampaign)}</View>
-      </View>
+        <View style={styles.campaignsList}>
+          {campaigns.map((campaign, index) => renderCampaign(campaign, index))}
+        </View>
+      </Animated.View>
 
-      <View style={styles.recentActivitySection}>
+      <Animated.View 
+        style={[
+          styles.recentActivitySection,
+          { 
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity style={styles.viewAllButton}>
+          <TouchableOpacity 
+            style={styles.viewAllButton}
+            activeOpacity={0.8}
+          >
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -166,27 +314,41 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
             { text: "Click milestone reached", time: "4h ago", value: "1,000 clicks" },
             { text: "New conversion from Campaign B", time: "6h ago", value: "₹32.50" },
           ].map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
+            <Animated.View 
+              key={index} 
+              style={[
+                styles.activityItem,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ 
+                    translateX: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20 * (index + 1), 0]
+                    }) 
+                  }]
+                }
+              ]}
+            >
               <View style={styles.activityInfo}>
                 <Text style={styles.activityText}>{activity.text}</Text>
                 <Text style={styles.activityTime}>{activity.time}</Text>
               </View>
               <Text style={styles.activityValue}>{activity.value}</Text>
-            </View>
+            </Animated.View>
           ))}
         </View>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 };
 
 const getIconName = (action: string): keyof typeof MaterialCommunityIcons.glyphMap => {
   switch (action) {
-    case 'Campaigns': return 'rocket-launch';
+    case 'Conversions': return 'rotate-3d-variant';
     case 'Statistics': return 'chart-bell-curve';
     case 'Wallet': return 'wallet-plus';
-    case 'Affpulse': return 'pulse';
-    case 'Settings': return 'cog';
+    case 'AffPlus': return 'pulse';
+    case 'Offer': return 'offer';
     default: return 'circle';
   }
 };
@@ -286,6 +448,7 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 20,
+    margin:8
   },
   actionItem: {
     marginRight: 16,
@@ -350,6 +513,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom: 16,
   },
   campaignHeader: {
     flexDirection: 'row',

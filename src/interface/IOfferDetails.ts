@@ -1,0 +1,39 @@
+export interface OfferDetails {
+    CAP?: string;
+    CampaignPhoto?: string;
+    KPI?: string;
+    Model?: string;
+    Tags?: string[];
+    _id?: string;
+    adult?: boolean;
+    advitisor_id?: string;
+    category?: string;
+    country?: string;
+    description?: string;
+    image_url?: string;
+    name?: string;
+    payment_frequency?: string;
+    paymentterms?: string;
+    payouts?: {
+      Deposit?: number;
+      FTD?: number;
+      Qualified?: number;
+      Registration?: number;
+    };
+    status?: string;
+    type?: string;
+    url?: string;
+    validation_time?: string;
+    behavioural_retargeting?: boolean;
+    brand_bidding?: boolean;
+    cashback?: boolean;
+    email?: boolean;
+    incentive?: boolean;
+    popunder_clickunder?: boolean;
+    sem?: boolean;
+    sms?: boolean;
+    social_media_ads?: boolean;
+    toolbar?: boolean;
+    youtube?: boolean;
+    conversion_flows?: string;
+  }

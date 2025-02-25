@@ -9,9 +9,11 @@ export type RootStackParamList = {
 
 export type DrawerParamList = {
   Home: undefined;
-  Profile: undefined;
   Wallet: undefined;
   AffPlus: undefined;
   Statistics: undefined;
-  Offer: undefined;
+  Offer: undefined; 
+  OfferDetails: { name: string };
+  Conversions: undefined;
+  Profile: undefined;
 };

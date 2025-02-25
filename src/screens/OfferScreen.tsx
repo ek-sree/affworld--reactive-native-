@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, ActivityIndicator, ScrollView } from 'react-native';
 import axios from 'axios';
-import OfferDetailsModal from '../components/OfferDetailsModal';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { DrawerParamList } from '../types/types';
+
+type OfferScreenNavigationProp = StackNavigationProp<DrawerParamList, 'Offer'>;
 
 interface Offer {
   advertiser_id: string;
@@ -27,6 +30,10 @@ interface FilterState {
   country: string;
 }
 
+interface OfferScreenProps {
+  navigation: OfferScreenNavigationProp;
+}
+
 const ITEMS_PER_PAGE = 10;
 const STATUS_COLORS = {
   active: '#4CAF50',
@@ -36,24 +43,22 @@ const STATUS_COLORS = {
 
 const OFFER_STATUS_OPTIONS = ['All Offers', 'active', 'paused', 'expired'];
 
-const OfferScreen: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<number>(1);
+const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
-  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null); 
-  const [modalVisible, setModalVisible] = useState(false);
   const [dropdownState, setDropdownState] = useState({
     offer: false,
     category: false,
     country: false
   });
-  
   const [filters, setFilters] = useState<FilterState>({
     offer: 'All Offers',
     category: 'All Categories',
     country: 'All Countries'
   });
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   const getDropdownOptions = (filterType: keyof FilterState): string[] => {
     switch (filterType) {
@@ -123,29 +128,32 @@ const OfferScreen: React.FC = () => {
     </Modal>
   );
 
-  const fetchOffers = async () => {
+  const fetchOffers = useCallback(async (pageNum: number, isNewFilter: boolean = false) => {
+    if (!hasMore && !isNewFilter) return;
+
     try {
       setLoading(true);
       const response = await axios.get<Offer[]>(
-        `https://admin-api.affworld.io/campaign/?page=${currentPage}&status=${
+        `https://admin-api.affworld.io/campaign/?page=${pageNum}&status=${
           filters.offer === 'All Offers' ? '' : filters.offer
-        }` 
+        }`
       );
       
       if (response.status === 200) {
-        setOffers(response.data);
-        applyFilters(response.data);
+        const newOffers = response.data;
+        setOffers(prev => isNewFilter ? newOffers : [...prev, ...newOffers]);
+        setHasMore(newOffers.length === ITEMS_PER_PAGE);
+        applyFilters(isNewFilter ? newOffers : [...offers, ...newOffers]);
       }
     } catch (error) {
       console.error("Error fetching offers:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.offer, offers]);
 
   const applyFilters = (data: Offer[]) => {
     let filtered = [...data];
-
     if (filters.offer !== 'All Offers') {
       filtered = filtered.filter(offer => offer.status === filters.offer);
     }
@@ -155,7 +163,6 @@ const OfferScreen: React.FC = () => {
     if (filters.country !== 'All Countries') {
       filtered = filtered.filter(offer => offer.country === filters.country);
     }
-
     setFilteredOffers(filtered);
   };
 
@@ -169,7 +176,7 @@ const OfferScreen: React.FC = () => {
       <View style={[styles.cell, styles.statusCell]}>
         <View style={[
           styles.statusContainer,
-          { backgroundColor: `${STATUS_COLORS[offer.status]}15` } 
+          { backgroundColor: `${STATUS_COLORS[offer.status]}15` }
         ]}>
           <View style={[
             styles.statusDot,
@@ -193,11 +200,8 @@ const OfferScreen: React.FC = () => {
       </View>
       <View style={[styles.cell, styles.detailsCell]}>
         <TouchableOpacity 
-          style={styles.detailsButton} 
-          onPress={() => {
-            setSelectedOffer(offer); 
-            setModalVisible(true);
-          }}
+          style={styles.detailsButton}
+          onPress={() => navigation.navigate('OfferDetails', { name: offer.name })}
         >
           <Text style={styles.detailsButtonText}>View Details</Text>
         </TouchableOpacity>
@@ -205,13 +209,43 @@ const OfferScreen: React.FC = () => {
     </View>
   );
 
+  const TableHeader = () => (
+    <View style={styles.tableHeader}>
+      <Text style={[styles.headerCell, styles.noCell]}>No</Text>
+      <Text style={[styles.headerCell, styles.offersCell]}>Offers</Text>
+      <Text style={[styles.headerCell, styles.statusCell]}>Status</Text>
+      <Text style={[styles.headerCell, styles.actionCell]}>Iframe</Text>
+      <Text style={[styles.headerCell, styles.actionCell]}>Action</Text>
+      <Text style={[styles.headerCell, styles.detailsCell]}>Details</Text>
+    </View>
+  );
+
   useEffect(() => {
-    fetchOffers();
-  }, [currentPage, filters.offer]);
+    fetchOffers(1, true);
+  }, [filters.offer]);
 
   useEffect(() => {
     applyFilters(offers);
   }, [filters]);
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      setPage(prev => {
+        const nextPage = prev + 1;
+        fetchOffers(nextPage);
+        return nextPage;
+      });
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="large" color="#1a73e8" />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -219,11 +253,16 @@ const OfferScreen: React.FC = () => {
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={styles.clearButton}
-            onPress={() => setFilters({
-              offer: 'All Offers',
-              category: 'All Categories',
-              country: 'All Countries'
-            })}
+            onPress={() => {
+              setFilters({
+                offer: 'All Offers',
+                category: 'All Categories',
+                country: 'All Countries'
+              });
+              setPage(1);
+              setOffers([]);
+              fetchOffers(1, true);
+            }}
           >
             <Text style={styles.clearButtonText}>Clear Filters</Text>
           </TouchableOpacity>
@@ -256,56 +295,24 @@ const OfferScreen: React.FC = () => {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.tableContainer}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.noCell]}>No</Text>
-            <Text style={[styles.headerCell, styles.offersCell]}>Offers</Text>
-            <Text style={[styles.headerCell, styles.statusCell]}>Status</Text>
-            <Text style={[styles.headerCell, styles.actionCell]}>Iframe</Text>
-            <Text style={[styles.headerCell, styles.actionCell]}>Action</Text>
-            <Text style={[styles.headerCell, styles.detailsCell]}>Details</Text>
-          </View>
-
-          {filteredOffers.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No offers found</Text>
-              <Text style={styles.emptyStateSubtext}>Try adjusting your filters</Text>
-            </View>
-          ) : (
-            <ScrollView>
-              {filteredOffers.map((offer, index) => (
-                <TableRow key={offer.advertiser_id ||index} offer={offer} index={index} />
-              ))}
-            </ScrollView>
-          )}
+          <TableHeader />
+          <FlatList
+            data={filteredOffers}
+            renderItem={({ item, index }) => <TableRow offer={item} index={index} />}
+            keyExtractor={(item, index) => item.advertiser_id || `${index}`}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No offers found</Text>
+                <Text style={styles.emptyStateSubtext}>Try adjusting your filters</Text>
+              </View>
+            }
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+            showsVerticalScrollIndicator={false}
+          />
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-          onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          <Text style={styles.pageButtonText}>Previous</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.pageInfo}>
-          <Text style={styles.pageInfoText}>Page {currentPage}</Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.pageButton}
-          onPress={() => setCurrentPage(prev => prev + 1)}
-        >
-          <Text style={styles.pageButtonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
-
-      <OfferDetailsModal
-  visible={modalVisible}
-  onClose={() => setModalVisible(false)}
-  name={selectedOffer?.name || ''}
-/>
 
       <StyledDropdown
         visible={dropdownState.offer}
@@ -328,12 +335,6 @@ const OfferScreen: React.FC = () => {
         onSelect={(value) => setFilters(prev => ({ ...prev, country: value }))}
         selectedValue={filters.country}
       />
-
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#1a73e8" />
-        </View>
-      )}
     </View>
   );
 };
@@ -397,6 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 3,
+    minWidth: 840,
   },
   tableHeader: {
     flexDirection: 'row',
@@ -487,6 +489,7 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 48,
     alignItems: 'center',
+    minWidth: 840,
   },
   emptyStateText: {
     fontSize: 18,
@@ -498,38 +501,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6c757d',
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  footerLoader: {
+    padding: 20,
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    gap: 12,
-  },
-  pageButton: {
-    backgroundColor: '#1a73e8',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    elevation: 1,
-  },
-  pageButtonDisabled: {
-    backgroundColor: '#e9ecef',
-  },
-  pageButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  pageInfo: {
-    paddingHorizontal: 16,
-  },
-  pageInfoText: {
-    fontSize: 14,
-    color: '#495057',
-    fontWeight: '500',
+    minWidth: 840,
   },
   modalOverlay: {
     flex: 1,
@@ -587,12 +562,6 @@ const styles = StyleSheet.create({
     color: '#1a73e8',
     fontSize: 16,
     marginLeft: 8,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 
