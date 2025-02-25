@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API } from '../constant/api';
 import * as Clipboard from 'expo-clipboard';
 import { Toaster, toast } from 'sonner-native';
+import CustomNotification from '../components/common/CustomNotification';
 
 type OfferScreenNavigationProp = StackNavigationProp<DrawerParamList, 'Offer'>;
 
@@ -53,19 +54,12 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [filteredOffers, setFilteredOffers] = useState<Offer[]>([]);
-  const [dropdownState, setDropdownState] = useState({
-    offer: false,
-    category: false,
-    country: false
-  });
-  const [filters, setFilters] = useState<FilterState>({
-    offer: 'All Offers',
-    category: 'All Categories',
-    country: 'All Countries'
-  });
+  const [dropdownState, setDropdownState] = useState({offer: false,category: false,country: false});
+  const [filters, setFilters] = useState<FilterState>({offer: 'All Offers',category: 'All Categories',country: 'All Countries'});
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [affiliateId, setAffiliateId] = useState<string>('');
+  const [notification, setNotification] = useState<{show: boolean;message: string;description?: string;}>({show: false,message: '',description: '',});
 
 
   const getAffiliationId = useCallback(async () => {
@@ -199,9 +193,10 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
     const handleCopy = async () => { 
       const link = `https://admin-api.affworld.io/${offer.code}?affiliate_id=${affiliateId}`;
       await Clipboard.setStringAsync(link); 
-      toast.success('Link Copied!', {
+      setNotification({
+        show: true,
+        message: 'Link Copied!',
         description: 'The tracking link has been copied to your clipboard',
-        duration: 2000,
       });
     };
 
@@ -293,7 +288,6 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
     );
   };
 
-  // Render filter chip
   const renderFilterChip = (type: keyof FilterState, value: string) => {
     const isSelected = filters[type] !== (
       type === 'offer' ? 'All Offers' : 
@@ -326,6 +320,12 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <CustomNotification
+        visible={notification.show}
+        message={notification.message}
+        description={notification.description}
+        onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+      />
       <View style={styles.header}>
         <View style={styles.filterHeader}>
           <Text style={styles.filterTitle}>Manage Filters</Text>

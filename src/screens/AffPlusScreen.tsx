@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Modal,
   ScrollView,
   Alert,
+  TouchableWithoutFeedback,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
@@ -17,83 +20,90 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/types';
 import { API } from '../constant/api';
 
-
 interface Service {
-    _id: string;
-    name: string;
-    rate?: number;
-  }
-  
-  interface CategoryData {
-    category: string;
-    services: Service[];
-  }
-  
-
-const AffPulseScreen = () => {
-    const [isAdvanced, setIsAdvanced] = useState<boolean>(false);
-    const [category, setCategory] = useState<string>('Please Select a Category');
-    const [service, setService] = useState<string>('Select Service');
-    const [link, setLink] = useState<string>('');
-    const [quantity, setQuantity] = useState<string>('100');
-    const [maxExecutions, setMaxExecutions] = useState<string>('1');
-    const [timeGap, setTimeGap] = useState<string>('');
-    const [serviceName, setServiceName] = useState<string>('');
-    const [showCategoryDropdown, setShowCategoryDropdown] = useState<boolean>(false);
-    const [showServiceDropdown, setShowServiceDropdown] = useState<boolean>(false);
-    const [totalQuantity, setTotalQuantity] = useState<string>('100');
-    const [pricePerQuantity, setPricePerQuantity] = useState<string>('0');
-    const [availableServices, setAvailableServices] = useState<Service[]>([]);
-    const [selectedServiceRate, setSelectedServiceRate] = useState<number>(0);
-    const [totalCharges, setTotalCharges] = useState<string>('0');
-    const [apiData, setApiData] = useState<CategoryData[]>([]);
-    const [affiliate_id, setAffiliate_id] = useState('');
-    const [totalBalance, setTotalBalance] = useState(0)
-
-const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-const handleWalletPress = () => {
-  navigation.navigate('Wallet');
-};
-
-async function fetchInitialData(){
-    try {
-        const token = await AsyncStorage.getItem("authToken");
-      if (!token) {
-        console.error("No token found! Ensure user is logged in.");
-        return;
-      }
-      const [getServiceListResponse, getAffiliationIdResponse,balanceResponse] = await Promise.all([
-        axios.get<CategoryData[]>(`https://jpi.affworld.io/api/service-list`),
-        axios.get(`${API}/api/affiliates/`, {
-            headers: {
-              Authorization: `Bearer ${await AsyncStorage.getItem('authToken')}`,
-            },
-          }),
-          axios.get(`https://affiliate-api.affworld.io/api/wallet/total-remaining-balance`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-      ])
-      console.log("IS working??");
-      
-      if(getServiceListResponse.status==200) {
-        setApiData(getServiceListResponse.data);
-      }
-      if(getAffiliationIdResponse.status==200){
-        setAffiliate_id(getAffiliationIdResponse.data.affiliate_id);
-      }
-      if(balanceResponse.status==200){
-        setTotalBalance(parseFloat(balanceResponse.data.total_remaining_balance.toFixed(2)));
-    }
-    } catch (error) {
-        
-    }
+  _id: string;
+  name: string;
+  rate?: number;
 }
 
+interface CategoryData {
+  category: string;
+  services: Service[];
+}
 
-useEffect(() => {
+const AffPulseScreen = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAdvanced, setIsAdvanced] = useState<boolean>(false);
+  const [category, setCategory] = useState<string>('Please Select a Category');
+  const [service, setService] = useState<string>('Select Service');
+  const [link, setLink] = useState<string>('');
+  const [quantity, setQuantity] = useState<string>('100');
+  const [maxExecutions, setMaxExecutions] = useState<string>('1');
+  const [timeGap, setTimeGap] = useState<string>('');
+  const [serviceName, setServiceName] = useState<string>('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState<boolean>(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState<boolean>(false);
+  const [totalQuantity, setTotalQuantity] = useState<string>('100');
+  const [pricePerQuantity, setPricePerQuantity] = useState<string>('0');
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
+  const [selectedServiceRate, setSelectedServiceRate] = useState<number>(0);
+  const [totalCharges, setTotalCharges] = useState<string>('0');
+  const [apiData, setApiData] = useState<CategoryData[]>([]);
+  const [affiliate_id, setAffiliate_id] = useState('');
+  const [totalBalance, setTotalBalance] = useState(0);
+  
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const handleWalletPress = () => {
+    navigation.navigate('Wallet');
+  };
+
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) {
+        Alert.alert("Authentication Error", "Please log in again.");
+        return;
+      }
+      
+      const [getServiceListResponse, getAffiliationIdResponse, balanceResponse] = await Promise.all([
+        axios.get<CategoryData[]>(`https://jpi.affworld.io/api/service-list`),
+        axios.get(`${API}/api/affiliates/`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        axios.get(`https://affiliate-api.affworld.io/api/wallet/total-remaining-balance`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+      
+      if (getServiceListResponse.status === 200) {
+        setApiData(getServiceListResponse.data);
+      }
+      
+      if (getAffiliationIdResponse.status === 200) {
+        setAffiliate_id(getAffiliationIdResponse.data.affiliate_id);
+      }
+      
+      if (balanceResponse.status === 200) {
+        setTotalBalance(parseFloat(balanceResponse.data.total_remaining_balance.toFixed(2)));
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        Alert.alert('Error', `Failed to load data: ${error.message}`);
+      } else {
+        Alert.alert('Error', 'An unexpected error occurred while loading data.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchInitialData();
-}, [])
+  }, [fetchInitialData]);
 
   useEffect(() => {
     if (quantity && selectedServiceRate) {
@@ -102,7 +112,17 @@ useEffect(() => {
     }
   }, [quantity, selectedServiceRate]);
 
-  const handleCategorySelect = (selectedCategory: string) => {
+  // Calculate total quantity when quantity and maxExecutions change
+  useEffect(() => {
+    if (isAdvanced && quantity && maxExecutions) {
+      const total = (parseFloat(quantity) * parseFloat(maxExecutions)).toString();
+      setTotalQuantity(total);
+    } else {
+      setTotalQuantity(quantity);
+    }
+  }, [quantity, maxExecutions, isAdvanced]);
+
+  const handleCategorySelect = useCallback((selectedCategory: string) => {
     setCategory(selectedCategory);
     const selectedCategoryData = apiData.find(item => item.category === selectedCategory);
     
@@ -117,18 +137,16 @@ useEffect(() => {
         setPricePerQuantity((firstService.rate || 0).toString());
       }
     }
-    setShowCategoryDropdown(false);
-  };
+  }, [apiData]);
 
-  const handleServiceSelect = (serviceName: string) => {
+  const handleServiceSelect = useCallback((serviceName: string) => {
     setService(serviceName);
     const selectedService = availableServices.find(s => s.name === serviceName);
     if (selectedService) {
       setSelectedServiceRate(selectedService.rate || 0);
       setPricePerQuantity((selectedService.rate || 0).toString());
     }
-    setShowServiceDropdown(false);
-  };
+  }, [availableServices]);
 
   const parseTimeGapToMilliseconds = (timeGap: string): number => {
     const [daysStr = '0', hoursStr = '0', minutesStr = '0'] = timeGap.split('/');
@@ -160,17 +178,16 @@ useEffect(() => {
       return;
     }
 
-
     const basePayload = {
-        affiliate_id,
-        category,
-        serviceName: service,
-        link,
-        name: serviceName ? serviceName : 'Single Affpulse', 
-        quantity: parseFloat(quantity),
-        timing: '', 
-        maxExecutions: 1, 
-      };
+      affiliate_id,
+      category,
+      serviceName: service,
+      link,
+      name: serviceName ? serviceName : 'Single Affpulse', 
+      quantity: parseFloat(quantity),
+      timing: '', 
+      maxExecutions: 1, 
+    };
 
     let payload;
 
@@ -197,6 +214,8 @@ useEffect(() => {
     } else {
       payload = basePayload;
     }
+
+    setIsLoading(true);
     const token = await AsyncStorage.getItem('authToken');
     try {
       const response = await axios.post('https://jpi.affworld.io/api/jobs', payload, {
@@ -207,7 +226,8 @@ useEffect(() => {
       });
       if (response.status === 200) {
         Alert.alert('Success', 'Job submitted successfully!');
-        fetchInitialData()
+        fetchInitialData();
+        // Reset form
         setLink('');
         setQuantity('100');
         setMaxExecutions('1');
@@ -215,47 +235,77 @@ useEffect(() => {
         setServiceName('');
       }
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-            console.log('Error status:', error.response?.status);
-            console.log('Error response data:', error.response?.data);
-            console.log('Error message:', error.message);
-            if (error.response?.status === 403) {
-              Alert.alert('Failed', 'Insufficient balance');
-            } else {
-              Alert.alert('Error', `Failed to submit job: ${error.message}`);
-            }
-          } else {
-            console.log('Unexpected error:', error);
-            Alert.alert('Error', 'An unexpected error occurred. Please try again.');
-          }
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          Alert.alert('Failed', 'Insufficient balance');
+        } else {
+          Alert.alert('Error', `Failed to submit job: ${error.message}`);
         }
-      };
-  
+      } else {
+        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const renderDropdown = (
+  // Function to safely close dropdowns
+  const closeCategoryDropdown = () => {
+    setShowCategoryDropdown(false);
+  };
+
+  const closeServiceDropdown = () => {
+    setShowServiceDropdown(false);
+  };
+
+  const renderDropdownModal = (
+    visible: boolean,
     items: (string | Service)[],
     onSelect: (value: string) => void,
-    closeDropdown: () => void
+    onClose: () => void
   ) => (
-    <View style={styles.dropdownList}>
-      <ScrollView>
-        {items.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.dropdownItem}
-            onPress={() => {
-              onSelect(typeof item === 'string' ? item : item.name);
-              closeDropdown();
-            }}
-          >
-            <Text style={styles.dropdownItemText}>
-              {typeof item === 'string' ? item : item.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.dropdownList}>
+              <ScrollView>
+                {items.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      const itemName = typeof item === 'string' ? item : item.name;
+                      onSelect(itemName);
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>
+                      {typeof item === 'string' ? item : item.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
+
+  if (isLoading && !apiData.length) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498DB" />
+        <Text style={styles.loadingText}>Loading data...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -266,7 +316,7 @@ useEffect(() => {
         <Text style={styles.logo}>AFFPULSE</Text>
         <View style={styles.walletContainer}>
           <Text style={styles.walletText}>
-            Wallet : <Text style={styles.walletAmount}>{totalBalance}</Text>
+            Wallet: <Text style={styles.walletAmount}>${totalBalance.toFixed(2)}</Text>
           </Text>
           <TouchableOpacity style={styles.addMoneyButton} onPress={handleWalletPress}>
             <Text style={styles.addMoneyText}>Add Money</Text>
@@ -274,9 +324,9 @@ useEffect(() => {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.toggleContainer}>
-          <Text style={styles.advanceText}>Advance</Text>
+          <Text style={styles.advanceText}>Advanced Mode</Text>
           <TouchableOpacity 
             style={[styles.toggleSwitch, isAdvanced && styles.toggleActive]}
             onPress={() => setIsAdvanced(!isAdvanced)}
@@ -304,15 +354,20 @@ useEffect(() => {
             style={styles.select}
             onPress={() => setShowCategoryDropdown(true)}
           >
-            <Text style={styles.selectText}>{category}</Text>
+            <Text style={category === 'Please Select a Category' ? styles.selectPlaceholder : styles.selectText}>
+              {category}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.label}>Services</Text>
           <TouchableOpacity 
             style={styles.select}
             onPress={() => setShowServiceDropdown(true)}
+            disabled={category === 'Please Select a Category'}
           >
-            <Text style={styles.selectText}>{service}</Text>
+            <Text style={service === 'Select Service' ? styles.selectPlaceholder : styles.selectText}>
+              {service}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.label}>Link:</Text>
@@ -366,20 +421,16 @@ useEffect(() => {
                 <View style={styles.halfWidth}>
                   <Text style={styles.label}>Total Quantity</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, styles.disabledInput]}
                     value={totalQuantity}
-                    onChangeText={setTotalQuantity}
-                    keyboardType="numeric"
                     editable={false}
                   />
                 </View>
                 <View style={styles.halfWidth}>
                   <Text style={styles.label}>Price Per Quantity</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, styles.disabledInput]}
                     value={pricePerQuantity}
-                    onChangeText={setPricePerQuantity}
-                    keyboardType="numeric"
                     editable={false}
                   />
                 </View>
@@ -389,67 +440,64 @@ useEffect(() => {
 
           <Text style={styles.label}>Total Charges</Text>
           <TextInput
-            style={styles.input}
-            value={totalCharges}
+            style={[styles.input, styles.chargesInput]}
+            value={`$${totalCharges}`}
             editable={false}
           />
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
+          <TouchableOpacity 
+            style={styles.submitButton} 
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit</Text>
+            )}
           </TouchableOpacity>
-
         </View>
-
-        <Modal
-          visible={showCategoryDropdown}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowCategoryDropdown(false)}
-        >
-          <TouchableOpacity 
-            style={styles.modalOverlay}
-            onPress={() => setShowCategoryDropdown(false)}
-          >
-            {renderDropdown(
-              apiData.map(item => item.category),
-              handleCategorySelect,
-              () => setShowCategoryDropdown(false)
-            )}
-          </TouchableOpacity>
-        </Modal>
-
-        <Modal
-          visible={showServiceDropdown}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowServiceDropdown(false)}
-        >
-          <TouchableOpacity 
-            style={styles.modalOverlay}
-            onPress={() => setShowServiceDropdown(false)}
-          >
-            {renderDropdown(
-              availableServices,
-              handleServiceSelect,
-              () => setShowServiceDropdown(false)
-            )}
-          </TouchableOpacity>
-        </Modal>
       </ScrollView>
+
+      {/* Render both dropdown modals */}
+      {renderDropdownModal(
+        showCategoryDropdown,
+        apiData.map(item => item.category),
+        handleCategorySelect,
+        closeCategoryDropdown
+      )}
+
+      {renderDropdownModal(
+        showServiceDropdown,
+        availableServices,
+        handleServiceSelect,
+        closeServiceDropdown
+      )}
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f6fa',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f6fa',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#2C3E50',
+  },
   headerGradient: {
     padding: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 20,
   },
   logo: {
     color: 'white',
@@ -465,6 +513,11 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginTop: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   walletText: {
     fontSize: 16,
@@ -473,15 +526,22 @@ const styles = StyleSheet.create({
   walletAmount: {
     fontWeight: 'bold',
     color: '#2C3E50',
+    fontSize: 16,
   },
   addMoneyButton: {
     backgroundColor: '#3498DB',
     padding: 8,
     borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   addMoneyText: {
     color: 'white',
     fontSize: 14,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -504,6 +564,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     borderRadius: 14,
     padding: 2,
+    justifyContent: 'center',
   },
   toggleActive: {
     backgroundColor: '#4CAF50',
@@ -514,6 +575,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     transform: [{ translateX: 0 }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2,
   },
   toggleButtonActive: {
     transform: [{ translateX: 22 }],
@@ -530,31 +596,47 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
     color: '#2C3E50',
     marginBottom: 8,
     marginTop: 12,
+    fontWeight: '500',
   },
   select: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    padding: 12,
+    padding: 14,
     backgroundColor: '#f8f9fa',
   },
   selectText: {
     color: '#2C3E50',
     fontSize: 16,
   },
+  selectPlaceholder: {
+    color: '#999',
+    fontSize: 16,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    padding: 12,
+    padding: 14,
     fontSize: 16,
     backgroundColor: '#f8f9fa',
+  },
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
+    color: '#666',
+  },
+  chargesInput: {
+    backgroundColor: '#f0f8ff',
+    color: '#3498DB',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
   row: {
     flexDirection: 'row',
@@ -570,6 +652,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     margin: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   submitButtonText: {
     color: 'white',
@@ -584,10 +671,15 @@ const styles = StyleSheet.create({
   },
   dropdownList: {
     backgroundColor: 'white',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
-    width: '80%',
+    width: '85%',
     maxHeight: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
   },
   dropdownItem: {
     padding: 15,
@@ -598,7 +690,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2C3E50',
   },
- 
 });
 
 export default AffPulseScreen;

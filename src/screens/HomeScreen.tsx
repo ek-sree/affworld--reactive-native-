@@ -93,7 +93,9 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
   };
   
   useEffect(() => {
-    fetchWalletBalance();
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchWalletBalance(); 
+    });
     
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -109,7 +111,8 @@ const HomeScreen: React.FC<HomeScreenProps> = () => {
     ]).start(() => {
       animateProgressBars();
     });
-  }, []);
+    return unsubscribe;
+  }, [navigation]);
   
   const renderCampaign = (campaign: Campaign, index: number) => {
     const progressWidth = progressAnims[index].interpolate({

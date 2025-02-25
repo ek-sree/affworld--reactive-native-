@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AddMoneyModal from "../components/AddMoneyModal";
 import { API } from "../constant/api";
 import { FormattedTransaction, WalletTransaction } from "../interface/IWallet";
+import { useNavigation } from "@react-navigation/native";
 
 interface TransactionAnim {
   fade: Animated.Value;
@@ -29,6 +30,10 @@ const WalletScreen = () => {
   const [totalBalance, setTotalBalance] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [allTransactions, setAllTransactions] = useState<FormattedTransaction[]>([]);
+
+
+  const navigation = useNavigation();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -76,12 +81,15 @@ const WalletScreen = () => {
           amount: `₹ ${item.amount.toFixed(2)}`,
           status: item.verified === true ? "Success" : item.verified === "pending" ? "Pending" : "Failed",
         }));
-        setSelectedTransaction(formattedTransactions);
+        
+        setAllTransactions(formattedTransactions);
+        setSelectedTransaction(formattedTransactions); 
         transactionAnims.current = formattedTransactions.map(() => ({
           fade: new Animated.Value(0),
           translateY: new Animated.Value(50),
         }));
       }
+      
     } catch (error: any) {
       console.error("Error fetching wallet data:", error.response ? error.response.data : error.message);
     } finally {
@@ -91,6 +99,9 @@ const WalletScreen = () => {
   };
 
   useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchWalletData(); 
+    })
     Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
@@ -99,11 +110,8 @@ const WalletScreen = () => {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
-
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     if (!isLoading && selectedTransaction.length > 0) {
@@ -149,6 +157,18 @@ const WalletScreen = () => {
       useNativeDriver: true,
     }).start();
   };
+  const filterTransactions = (option: string) => {
+    setSelectedOption(option);
+    
+    if (option === "All Transactions") {
+      setSelectedTransaction(allTransactions);
+    } else if (option === "Added Balance") {
+      setSelectedTransaction(allTransactions.filter((txn) => txn.status === "Success"));
+    } else if (option === "Total Bill") {
+      setSelectedTransaction(allTransactions.filter((txn) => txn.status !== "Success"));
+    }
+  };
+  
 
   const renderIconForStatus = (status: string) => {
     if (status === "Success") return "checkmark-circle";
@@ -206,23 +226,24 @@ const WalletScreen = () => {
                 }
                 contentStyle={styles.menuContent}
               >
-                <Menu.Item
-                  onPress={() => { setSelectedOption("All Transactions"); closeMenu(); }}
-                  title="All Transactions"
-                  leadingIcon="format-list-bulleted"
-                />
-                <Divider />
-                <Menu.Item
-                  onPress={() => { setSelectedOption("Added Balance"); closeMenu(); }}
-                  title="Added Balance"
-                  leadingIcon="arrow-up-bold"
-                />
-                <Divider />
-                <Menu.Item
-                  onPress={() => { setSelectedOption("Total Bill"); closeMenu(); }}
-                  title="Total Bill"
-                  leadingIcon="receipt"
-                />
+               <Menu.Item
+  onPress={() => { filterTransactions("All Transactions"); closeMenu(); }}
+  title="All Transactions"
+  leadingIcon="format-list-bulleted"
+/>
+<Divider />
+<Menu.Item
+  onPress={() => { filterTransactions("Added Balance"); closeMenu(); }}
+  title="Added Balance"
+  leadingIcon="arrow-up-bold"
+/>
+<Divider />
+<Menu.Item
+  onPress={() => { filterTransactions("Total Bill"); closeMenu(); }}
+  title="Total Bill"
+  leadingIcon="receipt"
+/>
+
               </Menu>
             </Animated.View>
 
