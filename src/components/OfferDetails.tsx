@@ -143,26 +143,30 @@ const OfferDetailsScreen: React.FC<OfferDetailsScreenProps> = ({ navigation, rou
         style={styles.header}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <AntDesign name="arrowleft" size={24} color="#FFFFFF" />
+          <AntDesign name="arrowleft" size={15} color="#FFFFFF"/>
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <View style={styles.photoContainer}>
-            <View style={[
-              styles.photoPlaceholder,
-              offerDetails?.image_url && { backgroundColor: 'transparent' }
-            ]}>
-              {offerDetails?.image_url ? (
-                <Image 
-                  source={{ uri: offerDetails.image_url }}
-                  style={styles.offerImage}
-                />
-              ) : (
-                <Ionicons name="image-outline" size={40} color="#FFFFFF" />
-              )}
+          <View style={styles.headerRow}>
+            <View style={styles.photoContainer}>
+              <View style={[
+                styles.photoPlaceholder,
+                offerDetails?.image_url && { backgroundColor: 'transparent' }
+              ]}>
+                {offerDetails?.image_url ? (
+                  <Image 
+                    source={{ uri: offerDetails.image_url }}
+                    style={styles.offerImage}
+                  />
+                ) : (
+                  <Ionicons name="image-outline" size={30} color="#FFFFFF" />
+                )}
+              </View>
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle} numberOfLines={2}>{offerDetails?.name || name}</Text>
+              {renderStatusBadge(offerDetails?.status)}
             </View>
           </View>
-          <Text style={styles.headerTitle}>{offerDetails?.name || name}</Text>
-          {renderStatusBadge(offerDetails?.status)}
         </View>
       </LinearGradient>
 
@@ -288,48 +292,65 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
-    paddingBottom: 30,
+    padding: 16,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingBottom: 16,
   },
   backButton: {
     position: 'absolute',
     left: 16,
-    top: 40,
+    top: Platform.OS === 'ios' ? 40 : 20,
     zIndex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 20,
     padding: 8,
   },
   headerContent: {
+    marginLeft: 40,
+    marginTop: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginLeft: 12,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   photoContainer: {
-    alignItems: 'center',
   },
   photoPlaceholder: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 50,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginLeft:15
   },
   offerImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
   },
   scrollContent: {
     padding: 20,
@@ -378,17 +399,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  statusText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
   },
   card: {
     backgroundColor: '#FFFFFF',
