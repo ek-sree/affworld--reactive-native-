@@ -6,13 +6,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "Key_Id": "rzp_live_4MmjxKZQR37wbc"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "Key_Id": "rzp_live_4MmjxKZQR37wbc"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "Key_Id": "rzp_live_4MmjxKZQR37wbc"
+      }
     }
   },
   "submit": {
