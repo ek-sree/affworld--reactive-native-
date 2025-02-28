@@ -1,14 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import React, { useEffect, useState, useRef } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Animated,
-  Easing
+  Easing,
 } from "react-native";
 import { Menu, Divider, Provider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,11 +27,10 @@ const WalletScreen = () => {
   const [selectedOption, setSelectedOption] = useState("All Transactions");
   const [selectedTransaction, setSelectedTransaction] = useState<FormattedTransaction[]>([]);
   const [isAddMoneyModalVisible, setIsAddMoneyModalVisible] = useState(false);
-  const [totalBalance, setTotalBalance] = useState<number>(0);
+  const [totalBalance, setTotalBalance] = useState<number>(0); // Default to 0
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [allTransactions, setAllTransactions] = useState<FormattedTransaction[]>([]);
-
 
   const navigation = useNavigation();
 
@@ -48,13 +47,13 @@ const WalletScreen = () => {
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
+    outputRange: ["0deg", "360deg"],
   });
 
   const fetchWalletData = async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
     else setIsLoading(true);
-    
+
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
@@ -72,8 +71,12 @@ const WalletScreen = () => {
       ]);
 
       if (balanceResponse.status === 200) {
-        setTotalBalance(parseFloat(balanceResponse.data.total_remaining_balance.toFixed(2)));
+        const balance = balanceResponse.data.total_remaining_balance;
+        setTotalBalance(parseFloat(balance ? balance.toFixed(2) : "0")); 
+      } else {
+        setTotalBalance(0); 
       }
+
       if (transactionsResponse.status === 200) {
         const formattedTransactions = transactionsResponse.data.map((item: WalletTransaction) => ({
           date: new Date(item.timestamp).toLocaleDateString(),
@@ -81,17 +84,21 @@ const WalletScreen = () => {
           amount: `₹ ${item.amount.toFixed(2)}`,
           status: item.verified === true ? "Success" : item.verified === "pending" ? "Pending" : "Failed",
         }));
-        
         setAllTransactions(formattedTransactions);
-        setSelectedTransaction(formattedTransactions); 
+        setSelectedTransaction(formattedTransactions);
         transactionAnims.current = formattedTransactions.map(() => ({
           fade: new Animated.Value(0),
           translateY: new Animated.Value(50),
         }));
+      } else {
+        setAllTransactions([]);
+        setSelectedTransaction([]);
       }
-      
     } catch (error: any) {
       console.error("Error fetching wallet data:", error.response ? error.response.data : error.message);
+      setTotalBalance(0);
+      setAllTransactions([]);
+      setSelectedTransaction([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -99,9 +106,9 @@ const WalletScreen = () => {
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchWalletData(); 
-    })
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchWalletData();
+    });
     Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
@@ -114,7 +121,7 @@ const WalletScreen = () => {
   }, [navigation]);
 
   useEffect(() => {
-    if (!isLoading && selectedTransaction.length > 0) {
+    if (!isLoading && selectedTransaction) {
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
         Animated.timing(scaleAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -125,30 +132,32 @@ const WalletScreen = () => {
           easing: Easing.elastic(1.2),
           useNativeDriver: true,
         }),
-        ...transactionAnims.current.map((anim, index) =>
-          Animated.sequence([
-            Animated.delay(index * 120),
-            Animated.parallel([
-              Animated.timing(anim.fade, { toValue: 1, duration: 400, useNativeDriver: true }),
-              Animated.timing(anim.translateY, {
-                toValue: 0,
-                duration: 500,
-                easing: Easing.out(Easing.cubic),
-                useNativeDriver: true,
-              }),
-            ]),
-          ])
-        ),
+        ...(selectedTransaction.length > 0
+          ? transactionAnims.current.map((anim, index) =>
+              Animated.sequence([
+                Animated.delay(index * 120),
+                Animated.parallel([
+                  Animated.timing(anim.fade, { toValue: 1, duration: 400, useNativeDriver: true }),
+                  Animated.timing(anim.translateY, {
+                    toValue: 0,
+                    duration: 500,
+                    easing: Easing.out(Easing.cubic),
+                    useNativeDriver: true,
+                  }),
+                ]),
+              ])
+            )
+          : []),
       ]).start();
     }
   }, [selectedTransaction, isLoading]);
 
   const bounceAnimation = useRef(new Animated.Value(1)).current;
-  
+
   const onPressIn = () => {
     Animated.timing(bounceAnimation, { toValue: 0.9, duration: 100, useNativeDriver: true }).start();
   };
-  
+
   const onPressOut = () => {
     Animated.timing(bounceAnimation, {
       toValue: 1,
@@ -157,9 +166,9 @@ const WalletScreen = () => {
       useNativeDriver: true,
     }).start();
   };
+
   const filterTransactions = (option: string) => {
     setSelectedOption(option);
-    
     if (option === "All Transactions") {
       setSelectedTransaction(allTransactions);
     } else if (option === "Added Balance") {
@@ -168,7 +177,6 @@ const WalletScreen = () => {
       setSelectedTransaction(allTransactions.filter((txn) => txn.status !== "Success"));
     }
   };
-  
 
   const renderIconForStatus = (status: string) => {
     if (status === "Success") return "checkmark-circle";
@@ -188,12 +196,10 @@ const WalletScreen = () => {
           </View>
         ) : (
           <>
-            <Animated.View 
-              style={[styles.header, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}
-            >
+            <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
               <Animated.View style={{ transform: [{ scale: bounceAnimation }] }}>
-                <TouchableOpacity 
-                  style={styles.addMoneyButton} 
+                <TouchableOpacity
+                  style={styles.addMoneyButton}
                   onPress={() => setIsAddMoneyModalVisible(true)}
                   onPressIn={onPressIn}
                   onPressOut={onPressOut}
@@ -208,7 +214,7 @@ const WalletScreen = () => {
               </Animated.View>
             </Animated.View>
 
-            <Animated.View 
+            <Animated.View
               style={[styles.dropdownContainer, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}
             >
               <Menu
@@ -217,67 +223,82 @@ const WalletScreen = () => {
                 anchor={
                   <TouchableOpacity onPress={openMenu} style={styles.dropdownButton}>
                     <Text style={styles.dropdownText}>{selectedOption}</Text>
-                    <Ionicons 
-                      name={visible ? "chevron-up" : "chevron-down"} 
-                      size={18} 
-                      color="#333" 
+                    <Ionicons
+                      name={visible ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color="#333"
                     />
                   </TouchableOpacity>
                 }
                 contentStyle={styles.menuContent}
               >
-               <Menu.Item
-  onPress={() => { filterTransactions("All Transactions"); closeMenu(); }}
-  title="All Transactions"
-  leadingIcon="format-list-bulleted"
-/>
-<Divider />
-<Menu.Item
-  onPress={() => { filterTransactions("Added Balance"); closeMenu(); }}
-  title="Added Balance"
-  leadingIcon="arrow-up-bold"
-/>
-<Divider />
-<Menu.Item
-  onPress={() => { filterTransactions("Total Bill"); closeMenu(); }}
-  title="Total Bill"
-  leadingIcon="receipt"
-/>
-
+                <Menu.Item
+                  onPress={() => {
+                    filterTransactions("All Transactions");
+                    closeMenu();
+                  }}
+                  title="All Transactions"
+                  leadingIcon="format-list-bulleted"
+                />
+                <Divider />
+                <Menu.Item
+                  onPress={() => {
+                    filterTransactions("Added Balance");
+                    closeMenu();
+                  }}
+                  title="Added Balance"
+                  leadingIcon="arrow-up-bold"
+                />
+                <Divider />
+                <Menu.Item
+                  onPress={() => {
+                    filterTransactions("Total Bill");
+                    closeMenu();
+                  }}
+                  title="Total Bill"
+                  leadingIcon="receipt"
+                />
               </Menu>
             </Animated.View>
 
-            <ScrollView 
+            <ScrollView
               style={styles.transactionsContainer}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
               {selectedTransaction.length > 0 ? (
                 selectedTransaction.map((transaction, index) => (
-                  <Animated.View 
-                    key={`${transaction.orderId}-${index}`} 
+                  <Animated.View
+                    key={`${transaction.orderId}-${index}`}
                     style={[
                       styles.transactionItem,
                       {
                         opacity: transactionAnims.current[index]?.fade || 0,
                         transform: [{ translateY: transactionAnims.current[index]?.translateY || 50 }],
-                      }
+                      },
                     ]}
                   >
                     <View style={styles.transactionLeft}>
-                      <View style={[
-                        styles.iconContainer,
-                        transaction.status === "Success" ? styles.successIconBg :
-                        transaction.status === "Pending" ? styles.pendingIconBg :
-                        styles.failedIconBg
-                      ]}>
-                        <Ionicons 
-                          name={renderIconForStatus(transaction.status)} 
-                          size={22} 
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          transaction.status === "Success"
+                            ? styles.successIconBg
+                            : transaction.status === "Pending"
+                            ? styles.pendingIconBg
+                            : styles.failedIconBg,
+                        ]}
+                      >
+                        <Ionicons
+                          name={renderIconForStatus(transaction.status)}
+                          size={22}
                           color={
-                            transaction.status === "Success" ? "#0A8A0A" :
-                            transaction.status === "Pending" ? "#E9940A" : "#D50000"
-                          } 
+                            transaction.status === "Success"
+                              ? "#0A8A0A"
+                              : transaction.status === "Pending"
+                              ? "#E9940A"
+                              : "#D50000"
+                          }
                         />
                       </View>
                       <View>
@@ -288,19 +309,23 @@ const WalletScreen = () => {
                     </View>
                     <View style={styles.transactionRight}>
                       <Text style={styles.transactionAmount}>{transaction.amount}</Text>
-                      <View style={[
-                        styles.statusChip,
-                        transaction.status === "Success" ? styles.statusSuccess :
-                        transaction.status === "Pending" ? styles.statusPending :
-                        styles.statusFailed
-                      ]}>
+                      <View
+                        style={[
+                          styles.statusChip,
+                          transaction.status === "Success"
+                            ? styles.statusSuccess
+                            : transaction.status === "Pending"
+                            ? styles.statusPending
+                            : styles.statusFailed,
+                        ]}
+                      >
                         <Text style={styles.statusText}>{transaction.status}</Text>
                       </View>
                     </View>
                   </Animated.View>
                 ))
               ) : (
-                <Animated.View 
+                <Animated.View
                   style={[styles.noTransactionContainer, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}
                 >
                   <Ionicons name="wallet-outline" size={60} color="#DDD" />

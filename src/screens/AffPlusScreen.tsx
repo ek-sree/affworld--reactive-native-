@@ -112,7 +112,6 @@ const AffPulseScreen = () => {
     }
   }, [quantity, selectedServiceRate]);
 
-  // Calculate total quantity when quantity and maxExecutions change
   useEffect(() => {
     if (isAdvanced && quantity && maxExecutions) {
       const total = (parseFloat(quantity) * parseFloat(maxExecutions)).toString();
@@ -227,7 +226,6 @@ const AffPulseScreen = () => {
       if (response.status === 200) {
         Alert.alert('Success', 'Job submitted successfully!');
         fetchInitialData();
-        // Reset form
         setLink('');
         setQuantity('100');
         setMaxExecutions('1');
@@ -249,7 +247,6 @@ const AffPulseScreen = () => {
     }
   };
 
-  // Function to safely close dropdowns
   const closeCategoryDropdown = () => {
     setShowCategoryDropdown(false);
   };
@@ -459,7 +456,6 @@ const AffPulseScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Render both dropdown modals */}
       {renderDropdownModal(
         showCategoryDropdown,
         apiData.map(item => item.category),

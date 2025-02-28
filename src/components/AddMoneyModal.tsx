@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,12 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!visible) {
+      setError(""); 
+    }
+  }, [visible]);
+
   const validateAmount = useCallback((value: string) => {
     const numAmount = Number(value);
     if (isNaN(numAmount) || numAmount < 10) {
@@ -48,8 +54,6 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
       const token = await AsyncStorage.getItem("authToken");
       if (!token) throw new Error("Please login to continue");
 
-      console.log("Creating payment intent with amount:",amount)
-
       const response = await axios.post(
         "https://affiliate-api.affworld.io/api/wallet/create-payment-intent",
         { amount: amount, payment_method: paymentMethod },
@@ -59,9 +63,7 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
       if (!response.data || !response.data.order_id) {
         throw new Error("Invalid payment intent response");
       }
-      if (response.status === 200) {
-        console.log("Created payment intent");
-        
+      if (response.status === 200) {        
         return response.data;
       }
       return null;
@@ -114,9 +116,7 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
     setLoading(true);
 
     try {
-      const paymentIntent = await createPaymentIntent();
-      console.log("Payment intent: " + paymentIntent);
-      
+      const paymentIntent = await createPaymentIntent();      
       if (!paymentIntent) {
         setError("Failed to create payment intent. Please logout and try again.");
         setLoading(false);
@@ -141,12 +141,8 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
         },
         theme: { color: "#F37254" },
       };
-
-      console.log("Razorpay Options:", options);
-      console.log("RazorpayCheckout:", RazorpayCheckout);
       RazorpayCheckout.open(options)
         .then(async (data) => {
-          console.log("Payment Success:", data);
           try {
             const verificationResult = await verifyPayment({
               ...data,
@@ -182,9 +178,14 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
     }
   };
 
+  const handleClose = () => {
+    setError(""); 
+    onClose();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+      <TouchableWithoutFeedback onPress={handleClose}>
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContent}>

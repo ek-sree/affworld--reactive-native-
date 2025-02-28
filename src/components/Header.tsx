@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Feather, Ionicons } from '@expo/vector-icons';
@@ -12,10 +12,11 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ title, notificationCount = 0, navigation }) => {
-  const { userDetailsData } = useUserDetails();
+  const { userDetailsData,cacheBuster } = useUserDetails();
   const bellRotation = useRef(new Animated.Value(0)).current;
   const bellScale = useRef(new Animated.Value(1)).current;
   const avatarScale = useRef(new Animated.Value(1)).current;
+
 
   useEffect(() => {
     if (notificationCount > 0) {
@@ -134,9 +135,9 @@ const Header: React.FC<HeaderProps> = ({ title, notificationCount = 0, navigatio
                   end={[1, 1]}
                   style={styles.avatarContainer}
                 >
-                  {userDetailsData?.profile_pic ? (
-                    <Image 
-                      source={{ uri: userDetailsData.profile_pic }}
+                 {userDetailsData?.profile_pic ? (
+                    <Image
+                      source={{ uri: `${userDetailsData.profile_pic}?t=${cacheBuster}` }}
                       style={styles.profileImage}
                     />
                   ) : (

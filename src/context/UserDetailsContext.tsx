@@ -20,6 +20,7 @@ interface UserDetailsContextType {
   userDetailsData: UserDetailsData | null;
   loadingAffiliate: boolean;
   fetchUserDetailsData: () => Promise<void>;
+  cacheBuster: number;
 }
 
 const UserDetailsContext = createContext<UserDetailsContextType | undefined>(undefined);
@@ -31,7 +32,8 @@ interface UserDetailsProviderProps {
 export const UserDetailsProvider: React.FC<UserDetailsProviderProps> = ({ children }) => {
   const [userDetailsData, setUserDetailsData] = useState<UserDetailsData | null>(null);
   const [loadingAffiliate, setLoadingAffiliate] = useState(true);
-  const { isAuthenticated } = useAuth(); 
+  const [cacheBuster, setCacheBuster] = useState(Date.now()); 
+  const { isAuthenticated } = useAuth();
 
   const fetchUserDetailsData = async () => {
     setLoadingAffiliate(true);
@@ -54,7 +56,9 @@ export const UserDetailsProvider: React.FC<UserDetailsProviderProps> = ({ childr
       }
 
       const data: UserDetailsData = await response.json();
+      console.log("Context image updated:", data.profile_pic);
       setUserDetailsData(data);
+      setCacheBuster(Date.now()); 
     } catch (error) {
       console.error('Error fetching affiliate data:', error);
       setUserDetailsData(null);
@@ -65,7 +69,7 @@ export const UserDetailsProvider: React.FC<UserDetailsProviderProps> = ({ childr
 
   useEffect(() => {
     if (isAuthenticated) {
-        fetchUserDetailsData();
+      fetchUserDetailsData();
     } else {
       setUserDetailsData(null);
       setLoadingAffiliate(false);
@@ -73,7 +77,7 @@ export const UserDetailsProvider: React.FC<UserDetailsProviderProps> = ({ childr
   }, [isAuthenticated]);
 
   return (
-    <UserDetailsContext.Provider value={{ userDetailsData, loadingAffiliate, fetchUserDetailsData }}>
+    <UserDetailsContext.Provider value={{ userDetailsData, loadingAffiliate, fetchUserDetailsData, cacheBuster }}>
       {children}
     </UserDetailsContext.Provider>
   );
@@ -82,7 +86,7 @@ export const UserDetailsProvider: React.FC<UserDetailsProviderProps> = ({ childr
 export const useUserDetails = () => {
   const context = useContext(UserDetailsContext);
   if (!context) {
-    throw new Error('useAffiliate must be used within an AffiliateProvider');
+    throw new Error('useUserDetails must be used within a UserDetailsProvider');
   }
   return context;
 };

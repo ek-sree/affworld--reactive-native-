@@ -2,46 +2,55 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, StatusBar, Dimensions } from 'react-native';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import OverviewComponent from '../components/OverviewComponent';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import ProfileImageModal from '../components/common/ProfileImageModal';
+import ProfileImageModal from '../components/ProfileImageModal';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/types';
-import { API } from '../constant/api';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useUserDetails } from '../context/UserDetailsContext';
+import PaymentDetailsComponent from '../components/PaymentDetailsComponent';
+import FinanceComponent from '../components/FinanceComponent';
 
 const { width } = Dimensions.get('window');
 
 const ProfileScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [overviewData, setOverViewData] = useState({ name: "", affiliate_id: "", bio: "", email: "" });
-  const [profileData, setProfileData] = useState<{created_at: number, level: string}>({created_at: 0, level: ""});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isImageModalVisible, setIsImageModalVisible] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
+  const { userDetailsData, loadingAffiliate, fetchUserDetailsData,cacheBuster } = useUserDetails();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const handleWalletPress = () => {
     navigation.navigate('Wallet');
   };
 
-  const tabs = ['Overview', 'Managers', 'Campaigns', 'PostBack', 'Payouts', 'Company'];
+  const tabs = ['Overview', 'Payment Details', 'Financial', 'PostBack', 'Payouts', 'Company'];
 
   const renderTabContent = () => {
+    if (!userDetailsData) return <Text>Loading...</Text>;
     switch (activeTab) {
-      case "Overview":
-        return <OverviewComponent overViewData={overviewData} isModalVisible={isModalVisible} onCloseModal={() => setIsModalVisible(false)} onOpenModal={handleEditProfile}/>;
-      case "Managers":
-        return <EmptyStateCard title="Managers" message="Your managers will appear here" />;
-      case "Campaigns":
-        return <EmptyStateCard title="Campaigns" message="Your campaign analytics will appear here" />;
-      case "PostBack":
+      case 'Overview':
+        return (
+          <OverviewComponent
+            overViewData={{
+              name: userDetailsData.name,
+              affiliate_id: userDetailsData.affiliate_id,
+              bio: userDetailsData.bio,
+              email: userDetailsData.email,
+            }}
+            isModalVisible={isModalVisible}
+            onCloseModal={() => setIsModalVisible(false)}
+            onOpenModal={handleEditProfile}
+          />
+        );
+      case 'Payment Details':
+        return <PaymentDetailsComponent />;
+      case 'Financial':
+        return <FinanceComponent/>;
+      case 'PostBack':
         return <EmptyStateCard title="PostBack" message="Your postback settings will appear here" />;
-      case "Payouts":
+      case 'Payouts':
         return <EmptyStateCard title="Payouts" message="Your payout history will appear here" />;
-      case "Company":
+      case 'Company':
         return <EmptyStateCard title="Company" message="Your company details will appear here" />;
       default:
         return <EmptyStateCard title="Select a Tab" message="Choose a section to view details" />;
@@ -56,54 +65,24 @@ const ProfileScreen: React.FC = () => {
     </View>
   );
 
-  async function getaffiliates() {
-    setIsRefreshing(true);
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const response = await axios.get(
-        `${API}/api/affiliates/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      if (response.status == 200) {
-        const { affiliate_id, name, email, bio } = response.data;
-        setOverViewData({
-          affiliate_id,
-          name,
-          email,
-          bio,
-        });
-        setProfileImageUrl(response.data.profile_pic);
-        const year = new Date(response.data.created_at).getFullYear();
-        setProfileData({
-          created_at: year,
-          level: response.data.level
-        });
-      }
-    } catch (error: any) {
-      console.log("Error occurred while fetching affiliated data:", error.response?.data || error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }
+  const handleEditProfile = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleImageUpdate = (newImageUrl: string) => {
+    fetchUserDetailsData().then(() => {
+      console.log('ProfileScreen: Image updated, new profile_pic:', userDetailsData?.profile_pic);
+    });
+  };
 
   useEffect(() => {
-    getaffiliates();
     StatusBar.setBarStyle('light-content');
     return () => {
       StatusBar.setBarStyle('dark-content');
     };
   }, []);
 
-  const handleEditProfile = () => {    
-    setIsModalVisible(true); 
-  };
-
-  const StatCard = ({ value, label, icon }: { value: string | number, label: string, icon: string }) => (
+  const StatCard = ({ value, label, icon }: { value: string | number; label: string; icon: string }) => (
     <View style={styles.statsItem}>
       <View style={styles.statsIconContainer}>
         <MaterialCommunityIcons name={icon as any} size={24} color="#2563EB" />
@@ -114,6 +93,8 @@ const ProfileScreen: React.FC = () => {
       </View>
     </View>
   );
+
+  if (loadingAffiliate) return <Text>Loading profile...</Text>;
 
   return (
     <>
@@ -126,14 +107,14 @@ const ProfileScreen: React.FC = () => {
           style={styles.profileHeader}
         >
           <View style={styles.headerContentContainer}>
-            <TouchableOpacity 
-              style={styles.profileCircleContainer} 
+            <TouchableOpacity
+              style={styles.profileCircleContainer}
               onPress={() => setIsImageModalVisible(true)}
             >
               <View style={styles.profileCircle}>
-                {profileImageUrl ? (
-                  <Image 
-                    source={{ uri: profileImageUrl }} 
+              {userDetailsData?.profile_pic ? (
+                  <Image
+                    source={{ uri: `${userDetailsData.profile_pic}?t=${cacheBuster}` }}
                     style={styles.profileImage}
                   />
                 ) : (
@@ -153,11 +134,13 @@ const ProfileScreen: React.FC = () => {
                 <Text style={styles.tagText}>Affworld Active</Text>
               </View>
               <View style={styles.subTag}>
-                <Text style={styles.tagText}>{profileData.level} Level</Text>
+                <Text style={styles.tagText}>{userDetailsData?.level || 'N/A'} Level</Text>
               </View>
             </View>
 
-            <Text style={styles.memberSince}>Member since {profileData.created_at}</Text>
+            <Text style={styles.memberSince}>
+              Member since {userDetailsData ? new Date(userDetailsData.created_at).getFullYear() : 'N/A'}
+            </Text>
 
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={styles.primaryButton} onPress={handleWalletPress}>
@@ -182,30 +165,24 @@ const ProfileScreen: React.FC = () => {
             <StatCard value="₹0" label="Earnings (INR)" icon="currency-inr" />
             <StatCard value="1" label="Offers" icon="gift-outline" />
             <StatCard value="0" label="Clicks" icon="cursor-default-click-outline" />
-            <StatCard value={profileData.level} label="Level" icon="star-outline" />
+            <StatCard value={userDetailsData?.level || 'N/A'} label="Level" icon="star-outline" />
           </View>
         </View>
 
         <View style={styles.tabSection}>
           <View style={styles.tabContainer}>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.tabScrollContainer}
             >
               {tabs.map((tab) => (
                 <TouchableOpacity
                   key={tab}
-                  style={[
-                    styles.tab,
-                    activeTab === tab && styles.activeTab
-                  ]}
+                  style={[styles.tab, activeTab === tab && styles.activeTab]}
                   onPress={() => setActiveTab(tab)}
                 >
-                  <Text style={[
-                    styles.tabText,
-                    activeTab === tab && styles.activeTabText
-                  ]}>
+                  <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
                     {tab}
                   </Text>
                 </TouchableOpacity>
@@ -213,21 +190,20 @@ const ProfileScreen: React.FC = () => {
             </ScrollView>
           </View>
 
-          <View style={styles.tabContentContainer}>
-            {renderTabContent()}
-          </View>
+          <View style={styles.tabContentContainer}>{renderTabContent()}</View>
         </View>
-        
+
         <ProfileImageModal
           isVisible={isImageModalVisible}
           onClose={() => setIsImageModalVisible(false)}
-          currentImageUrl={profileImageUrl}
-          onImageUpdate={(newImageUrl) => setProfileImageUrl(newImageUrl)}
+          currentImageUrl={userDetailsData?.profile_pic}
+          onImageUpdate={handleImageUpdate}
         />
       </ScrollView>
     </>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

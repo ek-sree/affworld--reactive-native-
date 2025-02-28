@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions } from 'react-native';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
+import { createDrawerNavigator, DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
+import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons, Feather, MaterialIcons, Foundation } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import HomeScreen from '../screens/HomeScreen';
@@ -17,11 +17,9 @@ import ConversionsScreen from '../screens/ConversionsScreen';
 import { useUserDetails } from '../context/UserDetailsContext';
 import OfferDetailsScreen from '../components/OfferDetails';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RouteProp } from '@react-navigation/native';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
-// Define stack param list for offer screens
 type OfferStackParamList = {
   OfferList: undefined;
   OfferDetails: { name: string };
@@ -29,7 +27,6 @@ type OfferStackParamList = {
 
 const OfferStack = createStackNavigator<OfferStackParamList>();
 
-// Component props types
 interface MenuItemsProps extends DrawerContentComponentProps {
   fadeAnim: Animated.Value;
 }
@@ -78,10 +75,11 @@ interface CustomDrawerContentProps extends DrawerContentComponentProps {
 const CustomDrawerContent: React.FC<CustomDrawerContentProps> = (props) => {
   const { logout } = props;
   const { userEmail } = useAuth();
-  const { userDetailsData } = useUserDetails();
+  const { userDetailsData, cacheBuster } = useUserDetails();
   const insets = useSafeAreaInsets();
   
-  // Animation values
+
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
 
@@ -125,9 +123,9 @@ const CustomDrawerContent: React.FC<CustomDrawerContentProps> = (props) => {
             activeOpacity={0.8}
           >
             <View style={styles.avatarContainer}>
-              {userDetailsData?.profile_pic ? (
-                <Image 
-                  source={{ uri: userDetailsData.profile_pic }}
+            {userDetailsData?.profile_pic ? (
+                <Image
+                  source={{ uri: `${userDetailsData.profile_pic}?t=${cacheBuster}` }}
                   style={styles.profileImage}
                 />
               ) : (

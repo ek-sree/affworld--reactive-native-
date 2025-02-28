@@ -21,7 +21,6 @@ import { API } from "../constant/api";
 import { EditProfileModalProps } from "../interface/IEditModal";
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Social media icons mapping
 const socialIcons: Record<string, { icon: string; color: string }> = {
   website_address: { icon: "globe", color: "#4285F4" },
   youtube_channel_link: { icon: "youtube", color: "#FF0000" },

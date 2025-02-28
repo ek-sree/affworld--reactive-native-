@@ -118,22 +118,23 @@ const ProfileImageModal: React.FC<ProfileImageModalProps> = ({
 
   const uploadImage = async () => {
     if (!selectedImage) return;
-    
+  
     setIsUploading(true);
     setUploadProgress(0);
-
+  
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('Authentication token not found. Please log in again.');
       }
-
+  
       console.log('Using token ending with:', token.slice(-4));
-
+  
       const fileType = validateImageFile(selectedImage);
       const formData = await createFormData(selectedImage, fileType);
-
-      const uploadResponse = await axios.post(
+      console.log("Profile image uploading", formData);
+  
+      const response = await axios.post(
         'https://affiliate-api.affworld.io/api/affiliates/update_profile_image',
         formData,
         {
@@ -147,79 +148,30 @@ const ProfileImageModal: React.FC<ProfileImageModalProps> = ({
             const progress = progressEvent.loaded / (progressEvent.total ?? 1);
             setUploadProgress(Math.round(progress * 100));
           },
-          validateStatus: (status) => {
-            console.log('Response status:', status);
-            return status >= 200 && status < 300;
-          }
         }
       );
-
-      console.log('Upload response:', {
-        status: uploadResponse.status,
-        data: uploadResponse.data,
-        headers: uploadResponse.headers
-      });
-
-      if (uploadResponse.data?.image_url) {
-        onImageUpdate(uploadResponse.data.image_url);
-        onClose();
+  
+      console.log("Upload response:", response.data);
+  
+      if (response.status === 200) {
+        onImageUpdate(''); 
         Alert.alert('Success', 'Profile picture updated successfully!');
+        onClose();
       } else {
-        throw new Error('Invalid response format from server');
+        throw new Error(`Unexpected status: ${response.status}`);
       }
-
     } catch (error: any) {
-      const errorDetails = {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers,
-        request: {
-          method: error.config?.method,
-          url: error.config?.url,
-          headers: error.config?.headers,
-        }
-      };
-      
-      console.error('Detailed upload error:', JSON.stringify(errorDetails, null, 2));
-
+      console.error('Upload error:', error);
       let errorMessage = 'Failed to upload image. ';
-      
       if (axios.isAxiosError(error)) {
-        if (error.response?.status === 500) {
-            console.log("Error 500?",errorMessage);
-            
-          errorMessage += 'The server encountered an error. Please try again later or contact support if the problem persists.';
-        } else if (error.code === 'ECONNABORTED') {
-          errorMessage += 'Request timed out. Please check your internet connection.';
-        } else if (error.response) {
-          errorMessage += `Server error (${error.response.status}): ${error.response.data?.message || 'Unknown error'}`;
-        } else if (error.request) {
-          errorMessage += 'No response from server. Please check your internet connection.';
-        } else {
-          errorMessage += error.message;
-        }
+        errorMessage += error.response?.data?.message || 'Server error.';
       } else {
         errorMessage += error.message;
       }
-
-      Alert.alert(
-        'Upload Failed', 
-        errorMessage,
-        [
-          { 
-            text: 'OK',
-            onPress: () => setIsUploading(false)
-          },
-          {
-            text: 'Try Again',
-            onPress: () => {
-              setIsUploading(false);
-              uploadImage();
-            }
-          }
-        ]
-      );
+      Alert.alert('Upload Failed', errorMessage, [
+        { text: 'OK', onPress: () => setIsUploading(false) },
+        { text: 'Retry', onPress: () => uploadImage() },
+      ]);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
