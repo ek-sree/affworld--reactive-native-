@@ -4,20 +4,21 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   Modal,
   ActivityIndicator,
-  ScrollView,
   SafeAreaView,
+  FlatList,
 } from "react-native";
 import axios from "axios";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { DrawerParamList } from "../types/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API } from "../constant/api";
-import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
 import CustomNotification from "../components/common/CustomNotification";
+import { LinearGradient } from "expo-linear-gradient";
+import OfferTableView from "../components/OfferTableView";
+import OfferCardView from "../components/OfferCardView";
 
 type OfferScreenNavigationProp = StackNavigationProp<DrawerParamList, "Offer">;
 
@@ -51,12 +52,6 @@ interface OfferScreenProps {
 }
 
 const ITEMS_PER_PAGE = 10;
-const STATUS_COLORS = {
-  active: "#34C759",
-  paused: "#FF9500",
-  expired: "#FF3B30",
-};
-
 const OFFER_STATUS_OPTIONS = ["All Offers", "active", "paused", "expired"];
 
 const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
@@ -82,6 +77,7 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
     description?: string;
   }>({ show: false, message: "", description: "" });
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"list" | "card">("card"); 
 
   const getAffiliationId = useCallback(async () => {
     try {
@@ -126,32 +122,25 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
     onSelect,
     selectedValue,
   }) => (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        onPress={onClose}
-        activeOpacity={1}
-      >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} onPress={onClose} activeOpacity={1}>
         <View style={styles.dropdownContainer}>
-          <View style={styles.dropdownHeader}>
+          <LinearGradient
+            colors={["#6366F1", "#4F46E5"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.dropdownHeader}
+          >
             <Text style={styles.dropdownTitle}>Choose an Option</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#A1A1AA" />
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#FFFFFF" />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
           <FlatList
             data={options}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[
-                  styles.dropdownItem,
-                  selectedValue === item && styles.selectedItem,
-                ]}
+                style={[styles.dropdownItem, selectedValue === item && styles.selectedItem]}
                 onPress={() => {
                   onSelect(item);
                   onClose();
@@ -166,7 +155,7 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
                   {item}
                 </Text>
                 {selectedValue === item && (
-                  <Ionicons name="checkmark" size={18} color="#5850EC" />
+                  <Ionicons name="checkmark-circle" size={20} color="#4F46E5" />
                 )}
               </TouchableOpacity>
             )}
@@ -190,9 +179,7 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
         );
         if (response.status === 200) {
           const newOffers = response.data;
-          setOffers((prev) =>
-            isNewFilter ? newOffers : [...prev, ...newOffers]
-          );
+          setOffers((prev) => (isNewFilter ? newOffers : [...prev, ...newOffers]));
           setHasMore(newOffers.length === ITEMS_PER_PAGE);
           applyFilters(isNewFilter ? newOffers : [...offers, ...newOffers]);
         }
@@ -210,94 +197,16 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
     if (filters.offer !== "All Offers")
       filtered = filtered.filter((offer) => offer.status === filters.offer);
     if (filters.category !== "All Categories")
-      filtered = filtered.filter(
-        (offer) => offer.category === filters.category
-      );
+      filtered = filtered.filter((offer) => offer.category === filters.category);
     if (filters.country !== "All Countries")
       filtered = filtered.filter((offer) => offer.country === filters.country);
     setFilteredOffers(filtered);
   };
 
-  const TableRow: React.FC<{ offer: Offer; index: number }> = ({
-    offer,
-    index,
-  }) => {
-    const handleCopy = async () => {
-      const link = `https://admin-api.affworld.io/${offer.code}?affiliate_id=${affiliateId}`;
-      await Clipboard.setStringAsync(link);
-      setNotification({
-        show: true,
-        message: "Link Copied!",
-        description: "The tracking link has been copied to your clipboard",
-      });
-    };
-
-    return (
-      <View style={styles.row}>
-        <Text style={[styles.cell, styles.noCell]}>{index + 1}</Text>
-        <View style={[styles.cell, styles.offersCell]}>
-          <Text style={styles.offerName}>{offer.name}</Text>
-          <Text style={styles.offerCategory}>{offer.category}</Text>
-        </View>
-        <View style={[styles.cell, styles.statusCell]}>
-          <View
-            style={[
-              styles.statusContainer,
-              { backgroundColor: `${STATUS_COLORS[offer.status]}20` },
-            ]}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: STATUS_COLORS[offer.status] },
-              ]}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                { color: STATUS_COLORS[offer.status] },
-              ]}
-            >
-              {offer.status}
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.cell, styles.actionCell]}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCopy}
-            disabled={!affiliateId}
-          >
-            <Text style={styles.actionButtonText}>Copy Link</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.cell, styles.detailsCell]}>
-          <TouchableOpacity
-            style={styles.detailsButton}
-            onPress={() =>
-              navigation.navigate("OfferDetails", { name: offer.name })
-            }
-          >
-            <Text style={styles.detailsButtonText}>Details</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  const TableHeader = () => (
-    <View style={styles.tableHeader}>
-      <Text style={[styles.headerCell, styles.noCell]}>No</Text>
-      <Text style={[styles.headerCell, styles.offersCell]}>Offers</Text>
-      <Text style={[styles.headerCell, styles.statusCell]}>Status</Text>
-      <Text style={[styles.headerCell, styles.actionCell]}>Action</Text>
-      <Text style={[styles.headerCell, styles.detailsCell]}>Details</Text>
-    </View>
-  );
-
   useEffect(() => {
     fetchOffers(1, true);
   }, [filters.offer]);
+
   useEffect(() => {
     applyFilters(offers);
   }, [filters]);
@@ -314,39 +223,34 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
   const renderFooter = () =>
     loading ? (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="large" color="#5850EC" />
+        <ActivityIndicator size="large" color="#4F46E5" />
       </View>
     ) : null;
 
   const renderFilterChip = (type: keyof FilterState, value: string) => {
     const isSelected =
       filters[type] !==
-      (type === "offer"
-        ? "All Offers"
-        : type === "category"
-        ? "All Categories"
-        : "All Countries");
+      (type === "offer" ? "All Offers" : type === "category" ? "All Categories" : "All Countries");
     return (
       <TouchableOpacity
         style={[styles.filterChip, isSelected && styles.activeFilterChip]}
         onPress={() => setDropdownState((prev) => ({ ...prev, [type]: true }))}
       >
-        <Text
-          style={[
-            styles.filterChipText,
-            isSelected && styles.activeFilterChipText,
-          ]}
-        >
+        <Text style={[styles.filterChipText, isSelected && styles.activeFilterChipText]}>
           {value}
         </Text>
         <Ionicons
           name="chevron-down"
           size={16}
-          color={isSelected ? "#5850EC" : "#A1A1AA"}
+          color={isSelected ? "#4F46E5" : "#A1A1AA"}
           style={styles.filterChipIcon}
         />
       </TouchableOpacity>
     );
+  };
+
+  const handleCopyNotification = (message: string, description: string) => {
+    setNotification({ show: true, message, description });
   };
 
   return (
@@ -357,18 +261,33 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
         description={notification.description}
         onClose={() => setNotification((prev) => ({ ...prev, show: false }))}
       />
-      <View style={styles.header}>
+      <LinearGradient
+        colors={["#6366F1", "#4F46E5"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View style={styles.filterHeader}>
           <Text style={styles.filterTitle}>Offers Dashboard</Text>
           <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.viewToggleButton}
+              onPress={() => setViewMode(viewMode === "card" ? "list" : "card")}
+            >
+              <Ionicons
+                name={viewMode === "card" ? "list" : "grid-outline"}
+                size={22}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.filterToggleButton}
               onPress={() => setShowFilters(!showFilters)}
             >
               <Ionicons
-                name={showFilters ? "filter-outline" : "filter"}
-                size={24}
-                color="#5850EC"
+                name={showFilters ? "funnel-outline" : "funnel"}
+                size={22}
+                color="#FFFFFF"
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -385,6 +304,7 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
               }}
             >
               <Text style={styles.clearButtonText}>Reset</Text>
+              <Ionicons name="refresh-outline" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -404,31 +324,25 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
             </View>
           </View>
         )}
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.tableContainer}>
-          <TableHeader />
-          <FlatList
-            data={filteredOffers}
-            renderItem={({ item, index }) => (
-              <TableRow offer={item} index={index} />
-            )}
-            keyExtractor={(item, index) => item.advertiser_id || `${index}`}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No Offers Available</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Adjust filters to find offers
-                </Text>
-              </View>
-            }
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={renderFooter}
-            showsVerticalScrollIndicator={false}
+      </LinearGradient>
+      <View style={styles.tableContainer}>
+        {viewMode === "list" ? (
+          <OfferTableView
+            offers={filteredOffers}
+            affiliateId={affiliateId}
+            onCopy={handleCopyNotification}
+            navigation={navigation}
           />
-        </View>
-      </ScrollView>
+        ) : (
+          <OfferCardView
+            offers={filteredOffers}
+            affiliateId={affiliateId}
+            onCopy={handleCopyNotification}
+            navigation={navigation}
+          />
+        )}
+        {renderFooter()}
+      </View>
       <StyledDropdown
         visible={dropdownState.offer}
         onClose={() => setDropdownState((prev) => ({ ...prev, offer: false }))}
@@ -438,24 +352,16 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
       />
       <StyledDropdown
         visible={dropdownState.category}
-        onClose={() =>
-          setDropdownState((prev) => ({ ...prev, category: false }))
-        }
+        onClose={() => setDropdownState((prev) => ({ ...prev, category: false }))}
         options={getDropdownOptions("category")}
-        onSelect={(value) =>
-          setFilters((prev) => ({ ...prev, category: value }))
-        }
+        onSelect={(value) => setFilters((prev) => ({ ...prev, category: value }))}
         selectedValue={filters.category}
       />
       <StyledDropdown
         visible={dropdownState.country}
-        onClose={() =>
-          setDropdownState((prev) => ({ ...prev, country: false }))
-        }
+        onClose={() => setDropdownState((prev) => ({ ...prev, country: false }))}
         options={getDropdownOptions("country")}
-        onSelect={(value) =>
-          setFilters((prev) => ({ ...prev, country: value }))
-        }
+        onSelect={(value) => setFilters((prev) => ({ ...prev, country: value }))}
         selectedValue={filters.country}
       />
     </SafeAreaView>
@@ -463,10 +369,9 @@ const OfferScreen: React.FC<OfferScreenProps> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F4F9" },
+  container: { flex: 1, backgroundColor: "#F4F5F7" },
   header: {
-    padding: 20,
-    backgroundColor: "#FFFFFF",
+    padding: 16,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -479,136 +384,60 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  filterTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1F2A44",
-    letterSpacing: 0.2,
+  filterTitle: { fontSize: 24, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.2 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  viewToggleButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 16 },
   filterToggleButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#F0F0FF",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   clearButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: "#5850EC",
-    elevation: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   clearButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
-  filterContainer: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
+  filterContainer: { flexDirection: "row", gap: 12, flexWrap: "wrap", marginTop: 8 },
   filterSection: { flex: 1, minWidth: 150 },
   filterLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "#FFFFFF",
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   filterChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    elevation: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
   },
-  activeFilterChip: { borderColor: "#5850EC", backgroundColor: "#F0F0FF" },
-  filterChipText: {
-    flex: 1,
-    color: "#1F2A44",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  activeFilterChipText: { color: "#5850EC" },
+  activeFilterChip: { borderColor: "#FFFFFF", backgroundColor: "rgba(255, 255, 255, 1)" },
+  filterChipText: { flex: 1, color: "#1F2A44", fontSize: 14, fontWeight: "500" },
+  activeFilterChipText: { color: "#4F46E5", fontWeight: "600" },
   filterChipIcon: { marginLeft: 8 },
   tableContainer: {
-    margin: 20,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    minWidth: 700,
+    flex: 1,
+    marginTop: -16,
+    backgroundColor: "transparent",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: "hidden",
   },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#F9FAFB",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  headerCell: {
-    padding: 16,
-    fontWeight: "700",
-    color: "#374151",
-    fontSize: 14,
-    letterSpacing: 0.2,
-  },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-    backgroundColor: "#FFFFFF",
-  },
-  cell: { padding: 16, justifyContent: "center" },
-  noCell: { width: 60, alignItems: "center", color: "#6B7280" },
-  offersCell: { width: 240 },
-  statusCell: { width: 120 },
-  actionCell: { width: 140 },
-  detailsCell: { width: 140 },
-  offerName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1F2A44",
-    marginBottom: 4,
-  },
-  offerCategory: { fontSize: 12, color: "#6B7280", fontWeight: "400" },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    gap: 6,
-  },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
-  statusText: { fontSize: 12, fontWeight: "600", textTransform: "capitalize" },
-  actionButton: {
-    backgroundColor: "#F0F0FF",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    elevation: 1,
-  },
-  actionButtonText: { color: "#5850EC", fontSize: 14, fontWeight: "600" },
-  detailsButton: {
-    backgroundColor: "#5850EC",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    elevation: 2,
-  },
-  detailsButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
-  emptyState: { padding: 60, alignItems: "center", minWidth: 840 },
-  emptyStateText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  emptyStateSubtext: { fontSize: 14, color: "#6B7280" },
-  footerLoader: { padding: 24, alignItems: "center", minWidth: 840 },
+  footerLoader: { padding: 20, alignItems: "center" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -630,26 +459,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
   },
-  dropdownTitle: { fontSize: 18, fontWeight: "700", color: "#1F2A44" },
+  dropdownTitle: { fontSize: 18, fontWeight: "700", color: "#FFFFFF" },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   dropdownList: { maxHeight: 320 },
   dropdownItem: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
   },
-  selectedItem: { backgroundColor: "#F0F0FF" },
-  dropdownItemText: {
-    flex: 1,
-    fontSize: 16,
-    color: "#374151",
-    fontWeight: "500",
-  },
-  selectedItemText: { color: "#5850EC", fontWeight: "600" },
+  selectedItem: { backgroundColor: "#EEF2FF" },
+  dropdownItemText: { fontSize: 16, color: "#374151", fontWeight: "500" },
+  selectedItemText: { color: "#4F46E5", fontWeight: "600" },
 });
 
 export default OfferScreen;
