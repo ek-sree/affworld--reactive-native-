@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+<<<<<<< HEAD
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -20,6 +21,27 @@ import { useNavigation } from "@react-navigation/native";
 interface TransactionAnim {
   fade: Animated.Value;
   translateY: Animated.Value;
+=======
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { Menu, Divider, Provider } from "react-native-paper";
+import AddMoneyModal from "../components/AddMoneyModal";
+import { API } from "../constant/api";
+
+interface WalletTransaction {
+  _id: string;
+  amount: number;
+  order_id: string;
+  timestamp: string;
+  verified: boolean | string;
+}
+
+interface FormattedTransaction {
+  date: string;
+  orderId: string;
+  amount: string;
+  status: string;
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 }
 
 const WalletScreen = () => {
@@ -27,6 +49,7 @@ const WalletScreen = () => {
   const [selectedOption, setSelectedOption] = useState("All Transactions");
   const [selectedTransaction, setSelectedTransaction] = useState<FormattedTransaction[]>([]);
   const [isAddMoneyModalVisible, setIsAddMoneyModalVisible] = useState(false);
+<<<<<<< HEAD
   const [totalBalance, setTotalBalance] = useState<number>(0); // Default to 0
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,10 +64,14 @@ const WalletScreen = () => {
   const spinValue = useRef(new Animated.Value(0)).current;
 
   const transactionAnims = useRef<TransactionAnim[]>([]);
+=======
+  const [totalBalance, setTotalBalance] = useState<number>(0);
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
 
+<<<<<<< HEAD
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
@@ -54,6 +81,9 @@ const WalletScreen = () => {
     if (showRefresh) setRefreshing(true);
     else setIsLoading(true);
 
+=======
+  const fetchWalletData = async () => {
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) {
@@ -71,12 +101,17 @@ const WalletScreen = () => {
       ]);
 
       if (balanceResponse.status === 200) {
+<<<<<<< HEAD
         const balance = balanceResponse.data.total_remaining_balance;
         setTotalBalance(parseFloat(balance ? balance.toFixed(2) : "0")); 
       } else {
         setTotalBalance(0); 
       }
 
+=======
+        setTotalBalance(parseFloat(balanceResponse.data.total_remaining_balance.toFixed(2)));
+      }
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
       if (transactionsResponse.status === 200) {
         const formattedTransactions = transactionsResponse.data.map((item: WalletTransaction) => ({
           date: new Date(item.timestamp).toLocaleDateString(),
@@ -84,6 +119,7 @@ const WalletScreen = () => {
           amount: `₹ ${item.amount.toFixed(2)}`,
           status: item.verified === true ? "Success" : item.verified === "pending" ? "Pending" : "Failed",
         }));
+<<<<<<< HEAD
         setAllTransactions(formattedTransactions);
         setSelectedTransaction(formattedTransactions);
         transactionAnims.current = formattedTransactions.map(() => ({
@@ -102,10 +138,17 @@ const WalletScreen = () => {
     } finally {
       setIsLoading(false);
       setRefreshing(false);
+=======
+        setSelectedTransaction(formattedTransactions);
+      }
+    } catch (error: any) {
+      console.error("Error fetching wallet data:", error.response ? error.response.data : error.message);
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
     }
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     const unsubscribe = navigation.addListener("focus", () => {
       fetchWalletData();
     });
@@ -183,10 +226,16 @@ const WalletScreen = () => {
     if (status === "Pending") return "time";
     return "close-circle";
   };
+=======
+    fetchWalletData();
+  }, []);
+  
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
   return (
     <Provider>
       <View style={styles.container}>
+<<<<<<< HEAD
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Animated.View style={{ transform: [{ rotate: spin }] }}>
@@ -336,14 +385,106 @@ const WalletScreen = () => {
             </ScrollView>
           </>
         )}
+=======
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.addMoneyButton} 
+            onPress={() => setIsAddMoneyModalVisible(true)}
+          >
+            <Text style={styles.addMoneyText}>Add Money</Text>
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.balanceAmount}>₹ {totalBalance}</Text>
+          </View>
+        </View>
+
+        <View style={styles.dropdownContainer}>
+          <Menu
+            visible={visible}
+            onDismiss={closeMenu}
+            anchor={
+              <TouchableOpacity onPress={openMenu} style={styles.dropdownButton}>
+                <Text style={styles.dropdownText}>{selectedOption}</Text>
+                <Text style={styles.dropdownIcon}>⌄</Text>
+              </TouchableOpacity>
+            }
+            contentStyle={styles.menuContent}
+          >
+            <Menu.Item
+              onPress={() => {
+                setSelectedOption("All Transactions");
+                closeMenu();
+              }}
+              title="All Transactions"
+            />
+            <Divider />
+            <Menu.Item
+              onPress={() => {
+                setSelectedOption("Added Balance");
+                closeMenu();
+              }}
+              title="Added Balance"
+            />
+            <Divider />
+            <Menu.Item
+              onPress={() => {
+                setSelectedOption("Total Bill");
+                closeMenu();
+              }}
+              title="Total Bill"
+            />
+          </Menu>
+        </View>
+
+        <ScrollView style={styles.transactionsContainer}>
+          {selectedTransaction.length > 0 ? (
+            selectedTransaction.map((transaction, index) => (
+              <View key={index} style={styles.transactionItem}>
+                <View style={styles.transactionLeft}>
+                  <View style={styles.iconContainer}>
+                    <Text style={styles.iconText}>🏦</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.transactionTitle}>Added to Wallet</Text>
+                    <Text style={styles.transactionDate}>{transaction.date}</Text>
+                    <Text style={styles.transactionOrderId}>Order ID: {transaction.orderId}</Text>
+                  </View>
+                </View>
+                <View style={styles.transactionRight}>
+                  <Text style={styles.transactionAmount}>{transaction.amount}</Text>
+                  <Text
+                    style={[
+                      styles.transactionStatus,
+                      transaction.status === "Pending" ? styles.statusPending :
+                      transaction.status === "Failed" ? styles.statusFailed :
+                      styles.statusSuccess,
+                    ]}
+                  >
+                    {transaction.status}
+                  </Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.noTransactionContainer}>
+              <Text style={styles.noTransactionText}>No statements for this affiliate.</Text>
+            </View>
+          )}
+        </ScrollView>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
       </View>
       <AddMoneyModal
         visible={isAddMoneyModalVisible}
         onClose={() => setIsAddMoneyModalVisible(false)}
+<<<<<<< HEAD
         onSuccess={() => {
           setIsAddMoneyModalVisible(false);
           fetchWalletData(true);
         }}
+=======
+        onSuccess={fetchWalletData}
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
       />
     </Provider>
   );
@@ -355,6 +496,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F7FA",
     padding: 16,
   },
+<<<<<<< HEAD
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -366,11 +508,14 @@ const styles = StyleSheet.create({
     color: "#555",
     fontWeight: "500",
   },
+=======
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+<<<<<<< HEAD
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 18,
@@ -392,19 +537,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+=======
+  },
+  addMoneyButton: {
+    backgroundColor: "#00BFFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   addMoneyText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+<<<<<<< HEAD
     marginLeft: 8,
   },
   balanceLabel: {
     fontSize: 15,
+=======
+  },
+  balanceLabel: {
+    fontSize: 14,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
     color: "#666",
     textAlign: "right",
   },
   balanceAmount: {
+<<<<<<< HEAD
     fontSize: 26,
     fontWeight: "bold",
     textAlign: "right",
@@ -419,10 +579,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
+=======
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "right",
+  },
+  dropdownContainer: {
+    alignSelf: "flex-start",
+    marginBottom: 10,
+  },
+  dropdownButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
+<<<<<<< HEAD
     elevation: 3,
     flexDirection: "row",
     alignItems: "center",
@@ -440,10 +616,29 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 20,
+=======
+    elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  dropdownIcon: {
+    fontSize: 16,
+    color: "#333",
+    marginTop: -6, 
+    marginLeft: 8,
+  },
+  menuContent: {
+    width: 180,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   noTransactionContainer: {
     alignItems: "center",
     justifyContent: "center",
+<<<<<<< HEAD
     marginTop: 60,
     padding: 20,
   },
@@ -457,27 +652,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
     marginTop: 8,
+=======
+    marginTop: 20,
+  },
+  noTransactionText: {
+    fontSize: 16,
+    color: "#777",
+    fontStyle: "italic",
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   transactionsContainer: {
     flex: 1,
   },
   transactionItem: {
     backgroundColor: "#fff",
+<<<<<<< HEAD
     padding: 18,
     borderRadius: 14,
     marginBottom: 16,
+=======
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 12,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     shadowColor: "#000",
+<<<<<<< HEAD
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,
     elevation: 3,
+=======
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   transactionLeft: {
     flexDirection: "row",
     alignItems: "center",
+<<<<<<< HEAD
     flex: 1,
   },
   iconContainer: {
@@ -496,21 +713,45 @@ const styles = StyleSheet.create({
   },
   failedIconBg: {
     backgroundColor: "rgba(213, 0, 0, 0.12)",
+=======
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E3F2FD",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  iconText: {
+    fontSize: 18,
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   transactionTitle: {
     fontSize: 16,
     fontWeight: "bold",
+<<<<<<< HEAD
     color: "#333",
   },
   transactionDate: {
     fontSize: 13,
     color: "#777",
     marginTop: 3,
+=======
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: "#777",
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   transactionOrderId: {
     fontSize: 12,
     color: "#999",
+<<<<<<< HEAD
     marginTop: 2,
+=======
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
   transactionRight: {
     alignItems: "flex-end",
@@ -518,6 +759,7 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 18,
     fontWeight: "bold",
+<<<<<<< HEAD
     color: "#1E293B",
     marginBottom: 5,
   },
@@ -540,6 +782,21 @@ const styles = StyleSheet.create({
   },
   statusFailed: {
     backgroundColor: "rgba(213, 0, 0, 0.15)",
+=======
+  },
+  transactionStatus: {
+    fontSize: 14,
+    marginTop: 5,
+  },
+  statusPending: {
+    color: "orange",
+  },
+  statusSuccess: {
+    color: "green",
+  },
+  statusFailed: {
+    color: "red",
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
   },
 });
 

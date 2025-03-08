@@ -1,4 +1,5 @@
 export type RootStackParamList = {
+<<<<<<< HEAD
   DrawerHome: undefined;
   Home: undefined;
   Profile: undefined;
@@ -17,3 +18,9 @@ export type DrawerParamList = {
   Conversions: undefined;
   Profile: undefined;
 };
+=======
+    Home: undefined;
+    Profile: undefined;
+    Wallet: undefined;
+  };
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf

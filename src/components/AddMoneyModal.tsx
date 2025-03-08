@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import React, { useState, useCallback, useEffect } from "react";
+=======
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import axios from "axios"
+import type React from "react"
+import { useState, useCallback } from "react"
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 import {
   View,
   Text,
@@ -11,6 +18,7 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
+<<<<<<< HEAD
 } from "react-native";
 import { RadioButton } from "react-native-paper";
 import RazorpayCheckout from "react-native-razorpay";
@@ -20,6 +28,19 @@ interface AddMoneyModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+=======
+  Platform,
+} from "react-native"
+import { RadioButton } from "react-native-paper"
+import RazorpayCheckout from "react-native-razorpay"
+import { Key_Id } from "@env"
+
+interface AddMoneyModalProps {
+  visible: boolean
+  onClose: () => void
+  onSuccess: () => void
+
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 }
 
 const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
@@ -27,6 +48,7 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+<<<<<<< HEAD
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("razorpay");
   const [error, setError] = useState("");
@@ -78,6 +100,58 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
     try {
       const token = await AsyncStorage.getItem("authToken");
       if (!token) throw new Error("Authentication failed");
+=======
+  const [amount, setAmount] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState("razorpay")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const validateAmount = useCallback((value: string) => {
+    const numAmount = Number(value)
+    if (isNaN(numAmount) || numAmount < 10) {
+      return "Minimum amount is ₹10"
+    }
+    if (numAmount > 100000) {
+      return "Maximum amount is ₹100,000"
+    }
+    return ""
+  }, [])
+
+  const createPaymentIntent = async () => {
+    try {
+      const token = await AsyncStorage.getItem("authToken")
+      if (!token) throw new Error("Please login to continue")
+
+      const response = await axios.post(
+        "https://affiliate-api.affworld.io/api/wallet/create-payment-intent",
+        {
+          amount: Number(amount),
+          payment_method: paymentMethod,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.data || !response.data.order_id) {
+        throw new Error("Invalid payment intent response")
+      }
+
+      return response.data
+    } catch (error: any) {
+      console.error("Payment Intent Error:", error.response?.data || error.message)
+      throw new Error(error.response?.data?.message || "Failed to initialize payment")
+    }
+  }
+
+  const verifyPayment = async (paymentResponse: any) => {
+    try {
+      const token = await AsyncStorage.getItem("authToken")
+      if (!token) throw new Error("Authentication failed")
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
       const response = await axios.post(
         "https://affiliate-api.affworld.io/api/wallet/verify-payment",
@@ -92,6 +166,7 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+<<<<<<< HEAD
         }
       );
 
@@ -143,10 +218,73 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
       };
       RazorpayCheckout.open(options)
         .then(async (data) => {
+=======
+        },
+      )
+
+      return response.data
+    } catch (error: any) {
+      console.error("Verification Error:", error.response?.data || error.message)
+      throw new Error("Payment verification failed. Please contact support if amount was deducted.")
+    }
+  }
+
+  const handleSubmit = async () => {
+    const validationError = validateAmount(amount)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setError("")
+    setLoading(true)
+
+    try {
+      const paymentIntent = await createPaymentIntent()
+      console.log("Payment Intent", paymentIntent)
+
+      const options = {
+        description: "Wallet Recharge",
+        image: "../../assets/images/Loginlogo.webp",
+        currency: "INR",
+        key: Key_Id,
+        amount: Number(amount) * 100,
+        name: "Affworld",
+        order_id: paymentIntent.order_id,
+        prefill: {
+          email: 'affworldtechnologies@gmail.com',
+          name: 'Affworld',
+        },
+        theme: { color: "#F37254" },
+        send_sms_hash: true,
+        remember_customer: true,
+        retry: {
+          enabled: true,
+          max_count: 1,
+        },
+        modal: {
+          escape: false,
+          confirm_close: true,
+        },
+        external: {
+          wallets: ["paytm"],
+        },
+        notes: {
+          platform: Platform.OS,
+        },
+      }
+
+      console.log("Razorpay Options:", options)
+
+      RazorpayCheckout.open(options)
+        .then(async (data: any) => {
+          console.log("Payment Success:", data)
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
           try {
             const verificationResult = await verifyPayment({
               ...data,
               order_id: paymentIntent.order_id,
+<<<<<<< HEAD
             });
             if (verificationResult.success) {
               Alert.alert("Success", "Payment successful!");
@@ -186,6 +324,46 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <TouchableWithoutFeedback onPress={handleClose}>
+=======
+            })
+
+            if (verificationResult.success) {
+              Alert.alert("Success", "Payment successful!")
+              onSuccess()
+              onClose()
+            } else {
+              throw new Error("Payment verification failed")
+            }
+          } catch (error) {
+            console.error("Verification Error:", error)
+            setError("Payment verification failed. Please contact support.")
+          }
+        })
+        .catch((error: any) => {
+          console.error("Payment Error:", error)
+          if (error.code === "PAYMENT_CANCELLED") {
+            setError("Payment was cancelled. Please try again.")
+          } else if (error.description?.includes("network")) {
+            setError("Network error. Please check your internet connection.")
+          } else {
+            console.log("Payment", error)
+            setError(error.message || "Payment failed. Please try again.")
+          }
+        })
+        .finally(() => {
+          setLoading(false)
+        })
+    } catch (error: any) {
+      console.error("Payment Setup Error:", error)
+      setError(error.message || "Failed to initialize payment. Please try again.")
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableWithoutFeedback onPress={onClose}>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <View style={styles.modalContent}>
@@ -206,6 +384,19 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
                   />
                   <Text style={styles.radioLabel}>Razorpay</Text>
                 </View>
+<<<<<<< HEAD
+=======
+
+                <View style={styles.radioOption}>
+                  <RadioButton
+                    value="upi"
+                    status={paymentMethod === "upi" ? "checked" : "unchecked"}
+                    onPress={() => setPaymentMethod("upi")}
+                    color="#00BFFF"
+                  />
+                  <Text style={styles.radioLabel}>Direct UPI</Text>
+                </View>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
               </View>
 
               <View style={styles.inputContainer}>
@@ -245,8 +436,13 @@ const AddMoneyModal: React.FC<AddMoneyModalProps> = ({
         </View>
       </TouchableWithoutFeedback>
     </Modal>
+<<<<<<< HEAD
   );
 };
+=======
+  )
+}
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -328,6 +524,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
   },
+<<<<<<< HEAD
 });
 
 export default AddMoneyModal;
+=======
+})
+
+export default AddMoneyModal
+
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf

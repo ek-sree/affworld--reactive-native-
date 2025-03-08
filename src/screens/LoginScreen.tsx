@@ -6,7 +6,10 @@ import { ParamListBase } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { API } from '../constant/api';
+<<<<<<< HEAD
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+=======
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +35,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   
     try {
+<<<<<<< HEAD
+=======
+      console.log("Sending login request...");
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
       const response = await axios.post(
         `${API}/api/login`,
         new URLSearchParams({
@@ -46,7 +53,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       );  
       const token = response.data.access_token;
       await login(token, username);
+<<<<<<< HEAD
       } catch (error: unknown) {  
+=======
+  
+      Alert.alert('Welcome Back!', 'Login successful');
+    } catch (error: unknown) {  
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
       console.log("Error in request:", error);
   
       if (axios.isAxiosError(error)) {
@@ -72,16 +85,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>
           <View style={styles.topSection}>
+<<<<<<< HEAD
             <Animated.Image entering={FadeInDown.delay(200).duration(500)}
+=======
+            <Image 
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
               style={styles.imageStyle} 
               source={require('../../assets/images/Loginlogo.webp')} 
               resizeMode="contain"
             />
+<<<<<<< HEAD
             <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.welcomeText}>Welcome Back!</Animated.Text>
             <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.subtitleText}>Sign in to continue</Animated.Text>
           </View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formSection}>
+=======
+            <Text style={styles.welcomeText}>Welcome Back!</Text>
+            <Text style={styles.subtitleText}>Sign in to continue</Text>
+          </View>
+
+          <View style={styles.formSection}>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
             <View style={styles.inputContainer}>
               <View style={styles.iconContainer}>
                 <Icon name="user" size={20} style={styles.icon} />
@@ -136,7 +161,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <TouchableOpacity style={styles.SignupLink} onPress={() => navigation.navigate("Signup")}>
               <Text style={styles.SignupLinkText}>Don't have an account?</Text>
             </TouchableOpacity>
+<<<<<<< HEAD
           </Animated.View>
+=======
+          </View>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

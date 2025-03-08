@@ -5,8 +5,13 @@ import React, { useState } from "react";
 import { Alert, Dimensions, Image, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { validateBio, validateEmail, validateName } from "../utils/validation";
+<<<<<<< HEAD
 import { API } from "../constant/api";
 import Animated, { FadeInDown } from "react-native-reanimated";
+=======
+import { useAuth } from "../context/AuthContext";
+import { API } from "../constant/api";
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
 
 
 const {width} = Dimensions.get('window')
@@ -93,16 +98,28 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             <View style={styles.topSection}>
+<<<<<<< HEAD
               <Animated.Image entering={FadeInDown.delay(200).duration(500)} 
+=======
+              <Image 
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
                 style={styles.imageStyle} 
                 source={require('../../assets/images/Loginlogo.webp')} 
                 resizeMode="contain"
               />
+<<<<<<< HEAD
               <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.welcomeText}>Welcome !</Animated.Text>
               <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.subtitleText}>Sign up to continue</Animated.Text>
             </View>
   
             <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formSection}>
+=======
+              <Text style={styles.welcomeText}>Welcome !</Text>
+              <Text style={styles.subtitleText}>Sign up to continue</Text>
+            </View>
+  
+            <View style={styles.formSection}>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
               <View style={styles.inputContainer}>
                 <View style={styles.iconContainer}>
                   <Icon name="user" size={20} style={styles.icon} />
@@ -187,7 +204,11 @@ const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
               <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate("Login")}>
                 <Text style={styles.forgotPasswordText}>Already have an account?</Text>
               </TouchableOpacity>
+<<<<<<< HEAD
             </Animated.View>
+=======
+            </View>
+>>>>>>> afe560583af16468ca5aaaf1dc2e1c1d8e271caf
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
